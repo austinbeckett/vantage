@@ -33,6 +33,7 @@ dist-ssr
 
 # Claude Code
 .claude
+!.claude/skills/
 
 # OS files
 Thumbs.db
