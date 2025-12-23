@@ -1,0 +1,587 @@
+{
+  "_meta": {
+    "models": {
+      "drugProducts": "Each drug product represents a specific pharmaceutical product with a unique Drug Identification Number (DIN) from Health Canada's databases, combining an active ingredient, manufacturer, dosage form, route of administration, and regulatory status.",
+      "activeIngredients": "Active ingredients are the drug substances or APIs that provide the therapeutic effect in drug products.",
+      "manufacturers": "Pharmaceutical companies that hold drug approvals or have submitted applications to Health Canada for generic drug products.",
+      "routesOfAdministration": "The methods by which drugs are delivered to the body, such as oral, intravenous, intramuscular, transdermal, topical, or subcutaneous.",
+      "dosageForms": "The physical formulations of drug products, such as tablet, capsule, solution, injection, cream, patch, or powder.",
+      "atcClassifications": "Anatomical Therapeutic Chemical classification codes that categorize drugs by their therapeutic use, target organ system, and pharmacological properties.",
+      "productStatuses": "The regulatory approval states of drug products in Health Canada's system, such as approved, marketed, expired, revoked, cancelled, or dormant."
+    },
+    "relationships": [
+      "Each Drug Product belongs to one Active Ingredient",
+      "Each Drug Product belongs to one Manufacturer",
+      "Each Drug Product belongs to one Route of Administration",
+      "Each Drug Product belongs to one Dosage Form",
+      "Each Drug Product belongs to one ATC Classification",
+      "Each Drug Product has one Product Status",
+      "Drug Products can be grouped by shared Active Ingredient to show related products",
+      "Drug Products contain a regulatory timeline showing key dates and status changes"
+    ]
+  },
+  "drugProducts": [
+    {
+      "id": "dp-001",
+      "din": "02247815",
+      "productName": "Cefazolin for Injection USP",
+      "activeIngredientId": "ai-001",
+      "manufacturerId": "mfr-001",
+      "routeId": "route-001",
+      "dosageFormId": "form-001",
+      "atcClassificationId": "atc-001",
+      "statusId": "status-002",
+      "strength": "1 g",
+      "lastUpdated": "2024-11-15",
+      "regulatoryTimeline": [
+        {
+          "date": "2023-03-12",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2023-09-08",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-01-20",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-002",
+      "din": "02247816",
+      "productName": "Cefazolin for Injection",
+      "activeIngredientId": "ai-001",
+      "manufacturerId": "mfr-002",
+      "routeId": "route-001",
+      "dosageFormId": "form-001",
+      "atcClassificationId": "atc-001",
+      "statusId": "status-002",
+      "strength": "1 g",
+      "lastUpdated": "2024-10-22",
+      "regulatoryTimeline": [
+        {
+          "date": "2022-11-05",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2023-06-14",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2023-08-30",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-003",
+      "din": "02465123",
+      "productName": "Metformin Hydrochloride Tablets",
+      "activeIngredientId": "ai-002",
+      "manufacturerId": "mfr-003",
+      "routeId": "route-002",
+      "dosageFormId": "form-002",
+      "atcClassificationId": "atc-002",
+      "statusId": "status-002",
+      "strength": "500 mg",
+      "lastUpdated": "2024-12-01",
+      "regulatoryTimeline": [
+        {
+          "date": "2024-02-18",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-08-05",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-10-12",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-004",
+      "din": "02465124",
+      "productName": "Metformin HCl Extended Release Tablets",
+      "activeIngredientId": "ai-002",
+      "manufacturerId": "mfr-001",
+      "routeId": "route-002",
+      "dosageFormId": "form-002",
+      "atcClassificationId": "atc-002",
+      "statusId": "status-001",
+      "strength": "750 mg",
+      "lastUpdated": "2024-09-14",
+      "regulatoryTimeline": [
+        {
+          "date": "2024-01-10",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-07-22",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        }
+      ]
+    },
+    {
+      "id": "dp-005",
+      "din": "02389456",
+      "productName": "Omeprazole Delayed Release Capsules",
+      "activeIngredientId": "ai-003",
+      "manufacturerId": "mfr-004",
+      "routeId": "route-002",
+      "dosageFormId": "form-003",
+      "atcClassificationId": "atc-003",
+      "statusId": "status-002",
+      "strength": "20 mg",
+      "lastUpdated": "2024-11-28",
+      "regulatoryTimeline": [
+        {
+          "date": "2023-05-20",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2023-11-30",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-02-15",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-006",
+      "din": "02512478",
+      "productName": "Fentanyl Transdermal System",
+      "activeIngredientId": "ai-004",
+      "manufacturerId": "mfr-002",
+      "routeId": "route-003",
+      "dosageFormId": "form-004",
+      "atcClassificationId": "atc-004",
+      "statusId": "status-002",
+      "strength": "25 mcg/hr",
+      "lastUpdated": "2024-10-05",
+      "regulatoryTimeline": [
+        {
+          "date": "2023-08-15",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-03-22",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-06-10",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-007",
+      "din": "02418965",
+      "productName": "Amlodipine Besylate Tablets",
+      "activeIngredientId": "ai-005",
+      "manufacturerId": "mfr-005",
+      "routeId": "route-002",
+      "dosageFormId": "form-002",
+      "atcClassificationId": "atc-005",
+      "statusId": "status-002",
+      "strength": "5 mg",
+      "lastUpdated": "2024-11-18",
+      "regulatoryTimeline": [
+        {
+          "date": "2022-09-10",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2023-04-15",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2023-07-01",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-008",
+      "din": "02356789",
+      "productName": "Ciprofloxacin Ophthalmic Solution",
+      "activeIngredientId": "ai-006",
+      "manufacturerId": "mfr-003",
+      "routeId": "route-004",
+      "dosageFormId": "form-005",
+      "atcClassificationId": "atc-006",
+      "statusId": "status-003",
+      "strength": "0.3%",
+      "lastUpdated": "2023-05-20",
+      "regulatoryTimeline": [
+        {
+          "date": "2019-03-12",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2019-10-08",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2020-01-15",
+          "event": "Product Marketed",
+          "database": "DPD"
+        },
+        {
+          "date": "2023-05-20",
+          "event": "Product Discontinued",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-009",
+      "din": "02501234",
+      "productName": "Atorvastatin Calcium Tablets",
+      "activeIngredientId": "ai-007",
+      "manufacturerId": "mfr-001",
+      "routeId": "route-002",
+      "dosageFormId": "form-002",
+      "atcClassificationId": "atc-007",
+      "statusId": "status-002",
+      "strength": "20 mg",
+      "lastUpdated": "2024-12-10",
+      "regulatoryTimeline": [
+        {
+          "date": "2024-04-08",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-09-25",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-11-15",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-010",
+      "din": "02478912",
+      "productName": "Lidocaine Topical Cream",
+      "activeIngredientId": "ai-008",
+      "manufacturerId": "mfr-004",
+      "routeId": "route-005",
+      "dosageFormId": "form-006",
+      "atcClassificationId": "atc-008",
+      "statusId": "status-002",
+      "strength": "4%",
+      "lastUpdated": "2024-11-02",
+      "regulatoryTimeline": [
+        {
+          "date": "2023-06-20",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-01-12",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-03-28",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    },
+    {
+      "id": "dp-011",
+      "din": "02523456",
+      "productName": "Morphine Sulfate Injection",
+      "activeIngredientId": "ai-009",
+      "manufacturerId": "mfr-002",
+      "routeId": "route-001",
+      "dosageFormId": "form-001",
+      "atcClassificationId": "atc-004",
+      "statusId": "status-001",
+      "strength": "10 mg/mL",
+      "lastUpdated": "2024-08-30",
+      "regulatoryTimeline": [
+        {
+          "date": "2024-03-15",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-08-20",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        }
+      ]
+    },
+    {
+      "id": "dp-012",
+      "din": "02445678",
+      "productName": "Levothyroxine Sodium Tablets",
+      "activeIngredientId": "ai-010",
+      "manufacturerId": "mfr-005",
+      "routeId": "route-002",
+      "dosageFormId": "form-002",
+      "atcClassificationId": "atc-009",
+      "statusId": "status-002",
+      "strength": "100 mcg",
+      "lastUpdated": "2024-12-15",
+      "regulatoryTimeline": [
+        {
+          "date": "2023-10-05",
+          "event": "Submission Received",
+          "database": "GSUR"
+        },
+        {
+          "date": "2024-05-18",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC"
+        },
+        {
+          "date": "2024-07-22",
+          "event": "Product Marketed",
+          "database": "DPD"
+        }
+      ]
+    }
+  ],
+  "activeIngredients": [
+    {
+      "id": "ai-001",
+      "name": "Cefazolin Sodium",
+      "category": "Antibiotic"
+    },
+    {
+      "id": "ai-002",
+      "name": "Metformin Hydrochloride",
+      "category": "Antidiabetic"
+    },
+    {
+      "id": "ai-003",
+      "name": "Omeprazole",
+      "category": "Proton Pump Inhibitor"
+    },
+    {
+      "id": "ai-004",
+      "name": "Fentanyl",
+      "category": "Opioid Analgesic"
+    },
+    {
+      "id": "ai-005",
+      "name": "Amlodipine Besylate",
+      "category": "Calcium Channel Blocker"
+    },
+    {
+      "id": "ai-006",
+      "name": "Ciprofloxacin",
+      "category": "Fluoroquinolone Antibiotic"
+    },
+    {
+      "id": "ai-007",
+      "name": "Atorvastatin Calcium",
+      "category": "Statin"
+    },
+    {
+      "id": "ai-008",
+      "name": "Lidocaine",
+      "category": "Local Anesthetic"
+    },
+    {
+      "id": "ai-009",
+      "name": "Morphine Sulfate",
+      "category": "Opioid Analgesic"
+    },
+    {
+      "id": "ai-010",
+      "name": "Levothyroxine Sodium",
+      "category": "Thyroid Hormone"
+    }
+  ],
+  "manufacturers": [
+    {
+      "id": "mfr-001",
+      "name": "Apotex Inc.",
+      "country": "Canada"
+    },
+    {
+      "id": "mfr-002",
+      "name": "Teva Canada Limited",
+      "country": "Canada"
+    },
+    {
+      "id": "mfr-003",
+      "name": "Sandoz Canada Inc.",
+      "country": "Canada"
+    },
+    {
+      "id": "mfr-004",
+      "name": "Pharmascience Inc.",
+      "country": "Canada"
+    },
+    {
+      "id": "mfr-005",
+      "name": "Mylan Pharmaceuticals",
+      "country": "Canada"
+    }
+  ],
+  "routesOfAdministration": [
+    {
+      "id": "route-001",
+      "name": "Intravenous",
+      "abbreviation": "IV"
+    },
+    {
+      "id": "route-002",
+      "name": "Oral",
+      "abbreviation": "PO"
+    },
+    {
+      "id": "route-003",
+      "name": "Transdermal",
+      "abbreviation": "TD"
+    },
+    {
+      "id": "route-004",
+      "name": "Ophthalmic",
+      "abbreviation": "OPTH"
+    },
+    {
+      "id": "route-005",
+      "name": "Topical",
+      "abbreviation": "TOP"
+    }
+  ],
+  "dosageForms": [
+    {
+      "id": "form-001",
+      "name": "Injection",
+      "type": "Sterile Injectable"
+    },
+    {
+      "id": "form-002",
+      "name": "Tablet",
+      "type": "Solid Oral"
+    },
+    {
+      "id": "form-003",
+      "name": "Capsule",
+      "type": "Solid Oral"
+    },
+    {
+      "id": "form-004",
+      "name": "Transdermal Patch",
+      "type": "Transdermal"
+    },
+    {
+      "id": "form-005",
+      "name": "Ophthalmic Solution",
+      "type": "Liquid"
+    },
+    {
+      "id": "form-006",
+      "name": "Topical Cream",
+      "type": "Semi-solid"
+    }
+  ],
+  "atcClassifications": [
+    {
+      "id": "atc-001",
+      "code": "J01DB04",
+      "description": "Cefazolin - Antibacterials for systemic use"
+    },
+    {
+      "id": "atc-002",
+      "code": "A10BA02",
+      "description": "Metformin - Drugs used in diabetes"
+    },
+    {
+      "id": "atc-003",
+      "code": "A02BC01",
+      "description": "Omeprazole - Drugs for acid related disorders"
+    },
+    {
+      "id": "atc-004",
+      "code": "N02AB03",
+      "description": "Fentanyl - Opioid analgesics"
+    },
+    {
+      "id": "atc-005",
+      "code": "C08CA01",
+      "description": "Amlodipine - Calcium channel blockers"
+    },
+    {
+      "id": "atc-006",
+      "code": "S01AE03",
+      "description": "Ciprofloxacin - Ophthalmological antiinfectives"
+    },
+    {
+      "id": "atc-007",
+      "code": "C10AA05",
+      "description": "Atorvastatin - Lipid modifying agents"
+    },
+    {
+      "id": "atc-008",
+      "code": "N01BB02",
+      "description": "Lidocaine - Local anesthetics"
+    },
+    {
+      "id": "atc-009",
+      "code": "H03AA01",
+      "description": "Levothyroxine - Thyroid preparations"
+    }
+  ],
+  "productStatuses": [
+    {
+      "id": "status-001",
+      "name": "Approved",
+      "description": "Notice of Compliance issued but not yet marketed"
+    },
+    {
+      "id": "status-002",
+      "name": "Marketed",
+      "description": "Actively sold in Canadian market"
+    },
+    {
+      "id": "status-003",
+      "name": "Discontinued",
+      "description": "No longer being marketed or manufactured"
+    },
+    {
+      "id": "status-004",
+      "name": "Expired",
+      "description": "Marketing authorization has expired"
+    }
+  ]
+}

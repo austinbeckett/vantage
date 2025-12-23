@@ -1,0 +1,75 @@
+/* Design Tokens for Vantage - Anthropic/Claude Inspired */
+
+:root {
+  /* Primary Color - Terracotta Orange (#DE7356) */
+  --color-primary-50: #fef6f4;
+  --color-primary-100: #fdeae6;
+  --color-primary-200: #fbd5cc;
+  --color-primary-300: #f6b5a3;
+  --color-primary-400: #e8937a;
+  --color-primary-500: #de7356;
+  --color-primary-600: #c75a3d;
+  --color-primary-700: #a74830;
+  --color-primary-800: #8a3d2a;
+  --color-primary-900: #723627;
+  --color-primary-950: #3d1a11;
+
+  /* Secondary Color - Muted Sage */
+  --color-secondary-50: #f6f7f5;
+  --color-secondary-100: #e8ebe5;
+  --color-secondary-200: #d3daca;
+  --color-secondary-300: #b3c0a4;
+  --color-secondary-400: #8fa07a;
+  --color-secondary-500: #6b8455;
+  --color-secondary-600: #556b42;
+  --color-secondary-700: #445536;
+  --color-secondary-800: #38452d;
+  --color-secondary-900: #2f3a27;
+  --color-secondary-950: #171e12;
+
+  /* Neutral Color - Warm Ivory/Charcoal */
+  --color-neutral-50: #fcfcf8;
+  --color-neutral-100: #f8f7f2;
+  --color-neutral-200: #f0eee6;
+  --color-neutral-300: #e2dfd4;
+  --color-neutral-400: #b8b3a4;
+  --color-neutral-500: #7a7567;
+  --color-neutral-600: #5a554a;
+  --color-neutral-700: #3d3a33;
+  --color-neutral-800: #302e2b;
+  --color-neutral-900: #262624;
+  --color-neutral-950: #1a1918;
+
+  /* Typography */
+  --font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Spacing */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows - Subtle, refined */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Note: We use clean solid cards instead of glassmorphism for a refined, minimal aesthetic */

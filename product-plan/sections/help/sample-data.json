@@ -1,0 +1,185 @@
+{
+  "_meta": {
+    "models": {
+      "categories": "Task-based groupings of help articles, organized by what users want to accomplish.",
+      "articles": "Individual help documents containing instructions, explanations, and tips for using the Vantage platform."
+    },
+    "relationships": [
+      "Each Category contains multiple Articles",
+      "Articles can reference Related Articles for further reading"
+    ]
+  },
+  "categories": [
+    {
+      "id": "cat-001",
+      "name": "Getting Started",
+      "description": "Learn the basics of navigating and using Vantage",
+      "icon": "rocket",
+      "articleCount": 4,
+      "articles": [
+        {
+          "id": "art-001",
+          "title": "Welcome to Vantage",
+          "summary": "An introduction to the Vantage platform and its core capabilities",
+          "content": "Vantage is your command center for pharmaceutical regulatory intelligence in Canada. The platform aggregates data from Health Canada's Drug Product Database (DPD), Notice of Compliance (NOC) database, and Generic Submissions Under Review (GSUR) into a unified, searchable interface.\n\n## What You Can Do\n\n- **Search & Discovery**: Explore the complete Canadian drug landscape with powerful filters\n- **Watchlists**: Create custom surveillance lists to monitor specific molecules, competitors, or therapeutic areas\n- **Competitive Intelligence**: Analyze market trends, competitor activity, and approval timelines\n- **Real-time Alerts**: Get notified when regulatory changes affect your areas of interest\n\n## Navigation\n\nUse the sidebar to navigate between sections. The Dashboard provides a quick overview of recent activity and alerts.",
+          "relatedArticles": ["art-002", "art-003"]
+        },
+        {
+          "id": "art-002",
+          "title": "Understanding the Dashboard",
+          "summary": "How to use your personalized command center",
+          "content": "The Dashboard is your home base in Vantage, providing a real-time view of regulatory activity relevant to your interests.\n\n## Key Components\n\n### Activity Feed\nShows recent regulatory changes across all your watchlists. Events are color-coded by type:\n- **Green**: Approvals and positive status changes\n- **Amber**: New submissions and updates\n- **Red**: Discontinuations or negative changes\n\n### Notification Inbox\nDisplays alerts triggered by your watchlist criteria. Click any notification to see details and take action.\n\n### Quick Stats\nAt-a-glance metrics showing your active watchlists, pending alerts, and recent activity volume.",
+          "relatedArticles": ["art-001", "art-005"]
+        },
+        {
+          "id": "art-003",
+          "title": "Navigating Search & Discovery",
+          "summary": "How to find drugs, manufacturers, and regulatory data",
+          "content": "The Search & Discovery section lets you explore Health Canada's pharmaceutical data with powerful filtering options.\n\n## Using Filters\n\nCombine multiple filters to narrow your search:\n- **Active Ingredient**: Search by molecule name or API\n- **Manufacturer**: Filter by company name\n- **Therapeutic Area**: Browse by ATC classification\n- **Status**: Filter by approval status (Marketed, Approved, Under Review, etc.)\n- **Route of Administration**: Oral, Injectable, Topical, etc.\n\n## Search Tips\n\n- Use partial names for broader results\n- Combine filters for precise targeting\n- Save frequent searches as watchlists for ongoing monitoring",
+          "relatedArticles": ["art-001", "art-004"]
+        },
+        {
+          "id": "art-004",
+          "title": "Your Account Settings",
+          "summary": "Managing your profile, preferences, and notifications",
+          "content": "Access Settings from the sidebar to customize your Vantage experience.\n\n## Profile\nUpdate your name, email, and password. Your email is used for alert notifications.\n\n## Notification Preferences\nControl how and when you receive alerts:\n- **Email Frequency**: Real-time, daily digest, or weekly summary\n- **Alert Types**: Choose which event types trigger notifications\n\n## Application Preferences\n- **Theme**: Light or dark mode\n- **Timezone**: Set your local timezone for accurate timestamps\n- **Startup Screen**: Choose which section loads when you log in",
+          "relatedArticles": ["art-002"]
+        }
+      ]
+    },
+    {
+      "id": "cat-002",
+      "name": "Managing Watchlists",
+      "description": "Create and organize your regulatory surveillance lists",
+      "icon": "list",
+      "articleCount": 4,
+      "articles": [
+        {
+          "id": "art-005",
+          "title": "Creating Your First Watchlist",
+          "summary": "Step-by-step guide to setting up regulatory monitoring",
+          "content": "Watchlists are the core of Vantage's surveillance capabilities. They let you monitor specific combinations of criteria and get alerted when changes occur.\n\n## Steps to Create a Watchlist\n\n1. Navigate to **Watchlists** in the sidebar\n2. Click **Create Watchlist**\n3. Enter a descriptive name (e.g., \"Competitor Cardiovascular Products\")\n4. Add one or more watchlist items with your monitoring criteria\n5. Save your watchlist\n\n## Choosing Criteria\n\nEach watchlist item can include:\n- Active ingredient(s)\n- Manufacturer(s)\n- Therapeutic area(s)\n- Route of administration\n- Dosage form\n\nThe more specific your criteria, the more targeted your alerts will be.",
+          "relatedArticles": ["art-006", "art-007"]
+        },
+        {
+          "id": "art-006",
+          "title": "Editing and Organizing Watchlists",
+          "summary": "How to update, rename, and manage your watchlists",
+          "content": "Keep your watchlists organized and up-to-date as your monitoring needs evolve.\n\n## Editing a Watchlist\n\n1. Open the watchlist you want to edit\n2. Click the **Edit** button (pencil icon)\n3. Modify the name, description, or criteria\n4. Save your changes\n\n## Adding New Items\n\nYou can add multiple monitoring criteria to a single watchlist. This is useful for tracking related products or competitors together.\n\n## Archiving vs. Deleting\n\n- **Archive**: Temporarily disable a watchlist without losing its configuration\n- **Delete**: Permanently remove a watchlist and its history\n\nArchived watchlists can be restored at any time from the Archive section.",
+          "relatedArticles": ["art-005", "art-008"]
+        },
+        {
+          "id": "art-007",
+          "title": "Understanding Watchlist Alerts",
+          "summary": "How alerts are triggered and what they mean",
+          "content": "When a drug product matching your watchlist criteria changes status, Vantage generates an alert.\n\n## Alert Types\n\n- **New Submission**: A generic application has been filed\n- **Status Change**: A product moved to a new regulatory stage\n- **Approval**: NOC granted for a product\n- **Discontinuation**: Product removed from market\n\n## Alert Delivery\n\nAlerts appear in:\n1. Your Dashboard notification inbox\n2. Email (based on your notification preferences)\n\n## Taking Action\n\nClick any alert to see full details, including:\n- What changed\n- When it changed\n- Link to the full product record",
+          "relatedArticles": ["art-005", "art-004"]
+        },
+        {
+          "id": "art-008",
+          "title": "Watchlist Best Practices",
+          "summary": "Tips for effective regulatory monitoring",
+          "content": "Get the most out of Vantage with these watchlist strategies.\n\n## Be Specific\nBroad criteria generate more alerts. Start specific and expand if needed.\n\n## Use Descriptive Names\nName watchlists by their purpose: \"Q1 Patent Expiry Molecules\" is clearer than \"Watchlist 3\"\n\n## Review Regularly\nSchedule monthly reviews to archive outdated watchlists and refine criteria.\n\n## Combine with Competitive Intelligence\nUse watchlist data alongside the CI dashboard for deeper market insights.\n\n## Organize by Priority\nCreate separate watchlists for high-priority monitoring vs. general awareness.",
+          "relatedArticles": ["art-005", "art-006"]
+        }
+      ]
+    },
+    {
+      "id": "cat-003",
+      "name": "Competitive Intelligence",
+      "description": "Analyze market trends and competitor activity",
+      "icon": "chart",
+      "articleCount": 3,
+      "articles": [
+        {
+          "id": "art-009",
+          "title": "Using the CI Dashboard",
+          "summary": "Navigate the competitive intelligence overview",
+          "content": "The Competitive Intelligence dashboard provides a visual overview of the Canadian pharmaceutical market.\n\n## Dashboard Components\n\n### Key Metrics\nTop-level numbers showing competitors tracked, recent approvals, pending reviews, and average approval times.\n\n### Activity Feed\nRecent regulatory events from all tracked competitors, filterable by time range and therapeutic area.\n\n### Market Share Charts\nDonut charts showing distribution by therapeutic area and by manufacturer.\n\n### Top Competitors\nRanked list of competitors by market presence, with quick stats on each.\n\n## Filtering Data\n\nUse the time range selector (1yr, 3yr, 5yr, All Time) and therapeutic area filter to focus your analysis.",
+          "relatedArticles": ["art-010", "art-011"]
+        },
+        {
+          "id": "art-010",
+          "title": "Analyzing Competitor Profiles",
+          "summary": "Deep dive into individual competitor data",
+          "content": "Click any competitor to see their detailed profile and regulatory history.\n\n## Profile Contents\n\n- **Company Overview**: Headquarters, total products, market share\n- **Portfolio Breakdown**: Products by therapeutic area\n- **Timeline**: Historical approvals and submissions\n- **Recent Activity**: Latest regulatory events\n\n## Comparing Competitors\n\nUse the \"Compare\" feature to see side-by-side analysis of multiple competitors.\n\n## Setting Your Company\n\nConfigure \"My Company\" in Settings to see how your organization compares to competitors in the market.",
+          "relatedArticles": ["art-009", "art-011"]
+        },
+        {
+          "id": "art-011",
+          "title": "Saving and Exporting Reports",
+          "summary": "Save custom views and export data",
+          "content": "Preserve your analysis and share insights with your team.\n\n## Saving Views\n\n1. Configure your desired filters and view\n2. Click **Save View**\n3. Enter a name and description\n4. Access saved views from the dropdown menu\n\n## Exporting Data\n\nClick the **Export** button to download:\n- **PDF**: Formatted report suitable for presentations\n- **Excel**: Raw data for further analysis\n\nExports include all currently visible data based on your active filters.",
+          "relatedArticles": ["art-009"]
+        }
+      ]
+    },
+    {
+      "id": "cat-004",
+      "name": "Understanding the Data",
+      "description": "Learn about Health Canada databases and regulatory processes",
+      "icon": "database",
+      "articleCount": 4,
+      "articles": [
+        {
+          "id": "art-012",
+          "title": "Health Canada Data Sources",
+          "summary": "Overview of DPD, NOC, and GSUR databases",
+          "content": "Vantage aggregates data from three primary Health Canada sources.\n\n## Drug Product Database (DPD)\nThe official registry of all drugs approved for sale in Canada. Contains product details, active ingredients, manufacturers, and current status.\n\n## Notice of Compliance (NOC) Database\nRecords of drug approvals issued by Health Canada. Shows when products received marketing authorization.\n\n## Generic Submissions Under Review (GSUR)\nPublic listing of generic drug applications currently being evaluated. Provides early visibility into upcoming generic competition.\n\n## Data Updates\nVantage syncs with Health Canada sources daily to ensure you have the latest information.",
+          "relatedArticles": ["art-013", "art-014"]
+        },
+        {
+          "id": "art-013",
+          "title": "Drug Product Statuses Explained",
+          "summary": "What each regulatory status means",
+          "content": "Understanding product statuses helps you interpret regulatory changes.\n\n## Common Statuses\n\n- **Marketed**: Product is approved and actively sold in Canada\n- **Approved**: NOC granted but not yet marketed\n- **Under Review**: Application submitted, awaiting decision\n- **Cancelled**: Approval withdrawn at manufacturer's request\n- **Dormant**: Approved but not currently marketed\n- **Expired**: DIN no longer valid\n\n## Status Transitions\n\nTypical progression:\n1. Under Review → Approved → Marketed\n2. Marketed → Dormant (temporary) → Marketed\n3. Marketed → Cancelled (permanent withdrawal)",
+          "relatedArticles": ["art-012", "art-007"]
+        },
+        {
+          "id": "art-014",
+          "title": "ATC Classification System",
+          "summary": "How drugs are categorized by therapeutic use",
+          "content": "The Anatomical Therapeutic Chemical (ATC) classification organizes drugs by their therapeutic purpose.\n\n## Classification Levels\n\n1. **Anatomical**: Main body system (e.g., Cardiovascular)\n2. **Therapeutic**: Therapeutic subgroup (e.g., Antihypertensives)\n3. **Pharmacological**: Pharmacological subgroup\n4. **Chemical**: Chemical subgroup\n5. **Substance**: Individual chemical substance\n\n## Using ATC in Vantage\n\nFilter by therapeutic area in Search & Discovery and Competitive Intelligence to focus on specific drug classes.\n\nWatchlists can also target specific ATC categories for monitoring.",
+          "relatedArticles": ["art-012", "art-003"]
+        },
+        {
+          "id": "art-015",
+          "title": "Generic Drug Approval Process",
+          "summary": "How generic applications move through Health Canada",
+          "content": "Understanding the generic approval pathway helps you anticipate market changes.\n\n## ANDS Process\n\nAbbreviated New Drug Submissions (ANDS) are the pathway for generic approvals:\n\n1. **Submission**: Manufacturer files ANDS with Health Canada\n2. **Screening**: Initial review for completeness\n3. **Review**: Scientific evaluation (typically 12-18 months)\n4. **NOC Issuance**: Approval granted\n5. **Market Entry**: Product launch\n\n## GSUR Visibility\n\nThe GSUR database shows submissions at the review stage, giving you advance notice of potential generic competition.\n\n## Monitoring Tips\n\nSet watchlists for molecules with upcoming patent expiries to track generic submissions early.",
+          "relatedArticles": ["art-012", "art-013"]
+        }
+      ]
+    },
+    {
+      "id": "cat-005",
+      "name": "Troubleshooting",
+      "description": "Solutions to common issues and questions",
+      "icon": "help",
+      "articleCount": 3,
+      "articles": [
+        {
+          "id": "art-016",
+          "title": "Why Am I Not Receiving Alerts?",
+          "summary": "Troubleshoot missing notifications",
+          "content": "If you're not receiving expected alerts, check these common causes.\n\n## Check Your Watchlist Criteria\n\nVerify your watchlist items match the products you want to monitor:\n- Spelling of active ingredients\n- Correct manufacturer names\n- Appropriate status filters\n\n## Check Notification Settings\n\n1. Go to **Settings** > **Notifications**\n2. Ensure email notifications are enabled\n3. Verify your email address is correct\n4. Check your preferred frequency (real-time vs. digest)\n\n## Check Your Email\n\n- Look in spam/junk folders\n- Add noreply@vantage.com to your contacts\n- Check if your organization blocks external emails",
+          "relatedArticles": ["art-007", "art-004"]
+        },
+        {
+          "id": "art-017",
+          "title": "Search Not Finding Expected Results",
+          "summary": "Tips for improving search accuracy",
+          "content": "If search isn't returning expected results, try these approaches.\n\n## Broaden Your Search\n\n- Use partial names instead of full names\n- Remove filters one at a time to identify the limiting factor\n- Try alternative spellings or naming conventions\n\n## Check Data Availability\n\nNot all historical data may be available. Vantage includes data from the current Health Canada databases, which have their own coverage limitations.\n\n## Common Issues\n\n- **Manufacturer names**: Companies may be listed under parent company names\n- **Active ingredients**: Use the INN (International Nonproprietary Name) spelling\n- **Recent changes**: Allow 24 hours for new Health Canada data to appear",
+          "relatedArticles": ["art-003", "art-012"]
+        },
+        {
+          "id": "art-018",
+          "title": "Account and Login Issues",
+          "summary": "Resolve access problems",
+          "content": "Having trouble accessing your account? Try these steps.\n\n## Forgot Password\n\n1. Click \"Forgot Password\" on the login page\n2. Enter your email address\n3. Check your inbox for the reset link\n4. Create a new password\n\n## Account Locked\n\nAfter multiple failed login attempts, accounts are temporarily locked. Wait 15 minutes and try again, or contact your administrator.\n\n## Browser Issues\n\nVantage works best with:\n- Chrome (recommended)\n- Firefox\n- Safari\n- Edge\n\nClear your browser cache if you experience display issues.\n\n## Need More Help?\n\nContact your organization's Vantage administrator or email support@vantage.com.",
+          "relatedArticles": ["art-004"]
+        }
+      ]
+    }
+  ]
+}

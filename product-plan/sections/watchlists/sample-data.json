@@ -1,0 +1,266 @@
+{
+  "_meta": {
+    "models": {
+      "watchlists": "A user-created surveillance collection for monitoring regulatory changes across multiple drugs, ingredients, manufacturers, or other criteria combinations.",
+      "watchlistCriteria": "The specific combination of search criteria within a watchlist that defines what to monitor, such as a particular active ingredient combined with a specific route of administration.",
+      "recentActivity": "Recent regulatory events that match a watchlist's criteria, showing new submissions, approvals, or status changes."
+    },
+    "relationships": [
+      "Each Watchlist contains one or more Watchlist Criteria (the filters to monitor)",
+      "Watchlist Criteria can reference Active Ingredients, Manufacturers, Routes, or Dosage Forms",
+      "Each Watchlist tracks Recent Activity showing matched regulatory events",
+      "Watchlists match Drug Products based on their combined criteria"
+    ]
+  },
+  "watchlists": [
+    {
+      "id": "wl-001",
+      "name": "Cefazolin IV Products",
+      "description": "Monitor all intravenous cefazolin products for regulatory updates",
+      "criteria": {
+        "searchTerm": null,
+        "activeIngredientId": "ai-001",
+        "manufacturerId": null,
+        "routeId": "route-001",
+        "dosageFormId": null
+      },
+      "notificationsActive": true,
+      "matchCount": 2,
+      "newMatchesCount": 0,
+      "recentUpdatesCount": 1,
+      "createdAt": "2024-09-15",
+      "lastUpdated": "2024-11-15",
+      "recentActivity": [
+        {
+          "id": "act-001",
+          "drugProductId": "dp-001",
+          "drugProductName": "Cefazolin for Injection USP",
+          "event": "Product status updated",
+          "database": "DPD",
+          "date": "2024-11-15",
+          "isNew": false
+        }
+      ],
+      "matchingProductIds": ["dp-001", "dp-002"]
+    },
+    {
+      "id": "wl-002",
+      "name": "Teva Canada Portfolio",
+      "description": "Track all products from Teva Canada Limited",
+      "criteria": {
+        "searchTerm": null,
+        "activeIngredientId": null,
+        "manufacturerId": "mfr-002",
+        "routeId": null,
+        "dosageFormId": null
+      },
+      "notificationsActive": true,
+      "matchCount": 3,
+      "newMatchesCount": 1,
+      "recentUpdatesCount": 2,
+      "createdAt": "2024-08-01",
+      "lastUpdated": "2024-10-22",
+      "recentActivity": [
+        {
+          "id": "act-002",
+          "drugProductId": "dp-011",
+          "drugProductName": "Morphine Sulfate Injection",
+          "event": "Notice of Compliance Issued",
+          "database": "NOC",
+          "date": "2024-08-20",
+          "isNew": true
+        },
+        {
+          "id": "act-003",
+          "drugProductId": "dp-002",
+          "drugProductName": "Cefazolin for Injection",
+          "event": "Product record updated",
+          "database": "DPD",
+          "date": "2024-10-22",
+          "isNew": false
+        },
+        {
+          "id": "act-004",
+          "drugProductId": "dp-006",
+          "drugProductName": "Fentanyl Transdermal System",
+          "event": "Product record updated",
+          "database": "DPD",
+          "date": "2024-10-05",
+          "isNew": false
+        }
+      ],
+      "matchingProductIds": ["dp-002", "dp-006", "dp-011"]
+    },
+    {
+      "id": "wl-003",
+      "name": "Oral Tablets Market",
+      "description": "Monitor oral tablet formulations across all manufacturers",
+      "criteria": {
+        "searchTerm": null,
+        "activeIngredientId": null,
+        "manufacturerId": null,
+        "routeId": "route-002",
+        "dosageFormId": "form-002"
+      },
+      "notificationsActive": true,
+      "matchCount": 5,
+      "newMatchesCount": 2,
+      "recentUpdatesCount": 3,
+      "createdAt": "2024-06-20",
+      "lastUpdated": "2024-12-15",
+      "recentActivity": [
+        {
+          "id": "act-005",
+          "drugProductId": "dp-012",
+          "drugProductName": "Levothyroxine Sodium Tablets",
+          "event": "Product record updated",
+          "database": "DPD",
+          "date": "2024-12-15",
+          "isNew": false
+        },
+        {
+          "id": "act-006",
+          "drugProductId": "dp-009",
+          "drugProductName": "Atorvastatin Calcium Tablets",
+          "event": "Product Marketed",
+          "database": "DPD",
+          "date": "2024-11-15",
+          "isNew": true
+        },
+        {
+          "id": "act-007",
+          "drugProductId": "dp-003",
+          "drugProductName": "Metformin Hydrochloride Tablets",
+          "event": "Product Marketed",
+          "database": "DPD",
+          "date": "2024-10-12",
+          "isNew": true
+        }
+      ],
+      "matchingProductIds": ["dp-003", "dp-004", "dp-007", "dp-009", "dp-012"]
+    },
+    {
+      "id": "wl-004",
+      "name": "Opioid Analgesics",
+      "description": "Track all opioid analgesic submissions and approvals",
+      "criteria": {
+        "searchTerm": "opioid",
+        "activeIngredientId": null,
+        "manufacturerId": null,
+        "routeId": null,
+        "dosageFormId": null
+      },
+      "notificationsActive": false,
+      "matchCount": 2,
+      "newMatchesCount": 0,
+      "recentUpdatesCount": 0,
+      "createdAt": "2024-10-01",
+      "lastUpdated": "2024-10-05",
+      "recentActivity": [],
+      "matchingProductIds": ["dp-006", "dp-011"]
+    },
+    {
+      "id": "wl-005",
+      "name": "Apotex Generic Pipeline",
+      "description": "Monitor Apotex Inc. submissions and approvals",
+      "criteria": {
+        "searchTerm": null,
+        "activeIngredientId": null,
+        "manufacturerId": "mfr-001",
+        "routeId": null,
+        "dosageFormId": null
+      },
+      "notificationsActive": true,
+      "matchCount": 3,
+      "newMatchesCount": 1,
+      "recentUpdatesCount": 2,
+      "createdAt": "2024-07-10",
+      "lastUpdated": "2024-12-10",
+      "recentActivity": [
+        {
+          "id": "act-008",
+          "drugProductId": "dp-009",
+          "drugProductName": "Atorvastatin Calcium Tablets",
+          "event": "Product Marketed",
+          "database": "DPD",
+          "date": "2024-11-15",
+          "isNew": true
+        },
+        {
+          "id": "act-009",
+          "drugProductId": "dp-001",
+          "drugProductName": "Cefazolin for Injection USP",
+          "event": "Product record updated",
+          "database": "DPD",
+          "date": "2024-11-15",
+          "isNew": false
+        }
+      ],
+      "matchingProductIds": ["dp-001", "dp-004", "dp-009"]
+    },
+    {
+      "id": "wl-006",
+      "name": "Metformin Products",
+      "description": "All metformin-containing products",
+      "criteria": {
+        "searchTerm": "metformin",
+        "activeIngredientId": "ai-002",
+        "manufacturerId": null,
+        "routeId": null,
+        "dosageFormId": null
+      },
+      "notificationsActive": true,
+      "matchCount": 2,
+      "newMatchesCount": 0,
+      "recentUpdatesCount": 1,
+      "createdAt": "2024-11-01",
+      "lastUpdated": "2024-12-01",
+      "recentActivity": [
+        {
+          "id": "act-010",
+          "drugProductId": "dp-003",
+          "drugProductName": "Metformin Hydrochloride Tablets",
+          "event": "Product record updated",
+          "database": "DPD",
+          "date": "2024-12-01",
+          "isNew": false
+        }
+      ],
+      "matchingProductIds": ["dp-003", "dp-004"]
+    }
+  ],
+  "activeIngredients": [
+    { "id": "ai-001", "name": "Cefazolin Sodium" },
+    { "id": "ai-002", "name": "Metformin Hydrochloride" },
+    { "id": "ai-003", "name": "Omeprazole" },
+    { "id": "ai-004", "name": "Fentanyl" },
+    { "id": "ai-005", "name": "Amlodipine Besylate" },
+    { "id": "ai-006", "name": "Ciprofloxacin" },
+    { "id": "ai-007", "name": "Atorvastatin Calcium" },
+    { "id": "ai-008", "name": "Lidocaine" },
+    { "id": "ai-009", "name": "Morphine Sulfate" },
+    { "id": "ai-010", "name": "Levothyroxine Sodium" }
+  ],
+  "manufacturers": [
+    { "id": "mfr-001", "name": "Apotex Inc." },
+    { "id": "mfr-002", "name": "Teva Canada Limited" },
+    { "id": "mfr-003", "name": "Sandoz Canada Inc." },
+    { "id": "mfr-004", "name": "Pharmascience Inc." },
+    { "id": "mfr-005", "name": "Mylan Pharmaceuticals" }
+  ],
+  "routesOfAdministration": [
+    { "id": "route-001", "name": "Intravenous", "abbreviation": "IV" },
+    { "id": "route-002", "name": "Oral", "abbreviation": "PO" },
+    { "id": "route-003", "name": "Transdermal", "abbreviation": "TD" },
+    { "id": "route-004", "name": "Ophthalmic", "abbreviation": "OPTH" },
+    { "id": "route-005", "name": "Topical", "abbreviation": "TOP" }
+  ],
+  "dosageForms": [
+    { "id": "form-001", "name": "Injection" },
+    { "id": "form-002", "name": "Tablet" },
+    { "id": "form-003", "name": "Capsule" },
+    { "id": "form-004", "name": "Transdermal Patch" },
+    { "id": "form-005", "name": "Ophthalmic Solution" },
+    { "id": "form-006", "name": "Topical Cream" }
+  ]
+}
