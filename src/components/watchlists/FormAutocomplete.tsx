@@ -32,11 +32,12 @@ export function FormAutocomplete({
   const [inputValue, setInputValue] = useState(value)
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch all forms (cached for 24 hours)
-  const { data: forms, isLoading, isFetching } = useAllForms()
+  // Fetch all forms ONLY after user interacts (lazy load to avoid blocking other requests)
+  const { data: forms, isLoading, isFetching } = useAllForms(hasInteracted)
 
   // Filter forms based on input (client-side)
   const suggestions = useMemo(() => {
@@ -121,6 +122,7 @@ export function FormAutocomplete({
 
   const handleFocus = () => {
     setIsFocused(true)
+    setHasInteracted(true) // Trigger lazy load on first focus
     if (forms && forms.length > 0) {
       setIsOpen(true)
     }

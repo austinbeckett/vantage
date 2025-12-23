@@ -49,6 +49,7 @@ export async function fetchDrugProductByDIN(
 
 /**
  * Search drug products by brand name (partial match)
+ * API: /drugproduct/?brandname=X returns products where brand_name contains X
  */
 export async function searchDrugProductsByBrandName(
   brandName: string

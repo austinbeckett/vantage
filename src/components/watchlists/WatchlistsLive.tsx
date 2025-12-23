@@ -4,11 +4,12 @@
 // Manages user watchlists with criteria that query the live Health Canada API
 
 import { useState } from 'react'
-import { Plus, Search, Eye, Bell, X, Loader2, Info } from 'lucide-react'
+import { Plus, Search, Eye, Bell, X, Loader2, Info, ChevronDown } from 'lucide-react'
 import {
   useWatchlistStorage,
   hasValidPrimarySearch,
   MIN_SEARCH_LENGTH,
+  MIN_DIN_LENGTH,
   type WatchlistLive,
   type WatchlistCriteriaLive
 } from '../../lib/hooks'
@@ -18,6 +19,13 @@ import { BrandAutocomplete } from './BrandAutocomplete'
 import { CompanyAutocomplete } from './CompanyAutocomplete'
 import { RouteAutocomplete } from './RouteAutocomplete'
 import { FormAutocomplete } from './FormAutocomplete'
+import { DINInput } from './DINInput'
+import { StatusSelect } from './StatusSelect'
+import { ClassAutocomplete } from './ClassAutocomplete'
+import { ScheduleAutocomplete } from './ScheduleAutocomplete'
+import { ATCAutocomplete } from './ATCAutocomplete'
+import { SearchConfirmationModal } from './SearchConfirmationModal'
+import { searchDrugProductsByBrandName, searchActiveIngredientsByName } from '../../lib/api/dpd/endpoints'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -44,15 +52,34 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingWatchlist, setEditingWatchlist] = useState<WatchlistLive | null>(null)
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
-  // Form state
+  // Form state - Primary search
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newDIN, setNewDIN] = useState('')
   const [newSearchTerm, setNewSearchTerm] = useState('')
   const [newIngredient, setNewIngredient] = useState('')
-  const [newCompany, setNewCompany] = useState('')
+
+  // Form state - Primary filters
   const [newRoute, setNewRoute] = useState('')
+  const [newCompany, setNewCompany] = useState('')
+
+  // Form state - Advanced filters
+  const [newStatus, setNewStatus] = useState<number | null>(null)
   const [newForm, setNewForm] = useState('')
+  const [newClass, setNewClass] = useState('')
+  const [newSchedule, setNewSchedule] = useState('')
+  const [newATC, setNewATC] = useState('')
+
+  // Search confirmation modal state
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false)
+  const [confirmationSearchType, setConfirmationSearchType] = useState<'brand' | 'ingredient'>('brand')
+  const [confirmationSearchTerm, setConfirmationSearchTerm] = useState('')
+  const [confirmationResults, setConfirmationResults] = useState<string[]>([])
+  const [pendingCriteria, setPendingCriteria] = useState<WatchlistCriteriaLive | null>(null)
 
   const filteredWatchlists = watchlists.filter(wl => {
     if (!searchQuery) return true
@@ -69,11 +96,23 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const resetForm = () => {
     setNewName('')
     setNewDescription('')
+    setNewDIN('')
     setNewSearchTerm('')
     setNewIngredient('')
-    setNewCompany('')
     setNewRoute('')
+    setNewCompany('')
+    setNewStatus(null)
     setNewForm('')
+    setNewClass('')
+    setNewSchedule('')
+    setNewATC('')
+    setShowAdvancedFilters(false)
+    // Reset confirmation modal state
+    setIsSearching(false)
+    setSearchError(null)
+    setConfirmationModalOpen(false)
+    setConfirmationResults([])
+    setPendingCriteria(null)
   }
 
   const handleCreate = () => {
@@ -85,11 +124,26 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     setEditingWatchlist(watchlist)
     setNewName(watchlist.name)
     setNewDescription(watchlist.description)
+    // Primary search
+    setNewDIN(watchlist.criteria.din || '')
     setNewSearchTerm(watchlist.criteria.searchTerm || '')
     setNewIngredient(watchlist.criteria.ingredientName || '')
-    setNewCompany(watchlist.criteria.companyNameFilter || '')
+    // Primary filters
     setNewRoute(watchlist.criteria.routeNameFilter || '')
+    setNewCompany(watchlist.criteria.companyNameFilter || '')
+    // Advanced filters
+    setNewStatus(watchlist.criteria.statusFilter ?? null)
     setNewForm(watchlist.criteria.formNameFilter || '')
+    setNewClass(watchlist.criteria.classFilter || '')
+    setNewSchedule(watchlist.criteria.scheduleFilter || '')
+    setNewATC(watchlist.criteria.atcFilter || '')
+    // Show advanced filters if any are set
+    const hasAdvanced = watchlist.criteria.statusFilter != null ||
+                       watchlist.criteria.formNameFilter ||
+                       watchlist.criteria.classFilter ||
+                       watchlist.criteria.scheduleFilter ||
+                       watchlist.criteria.atcFilter
+    setShowAdvancedFilters(!!hasAdvanced)
   }
 
   const handleToggleNotifications = (id: string) => {
@@ -108,13 +162,25 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     resetForm()
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const searchTerm = newSearchTerm.trim()
+    const ingredientTerm = newIngredient.trim()
+    const dinTerm = newDIN.trim()
+
     const criteria: WatchlistCriteriaLive = {
-      searchTerm: newSearchTerm.trim() || null,
-      ingredientName: newIngredient.trim() || null,
-      companyNameFilter: newCompany.trim() || null,
+      // Primary search
+      din: dinTerm || null,
+      searchTerm: searchTerm || null,
+      ingredientName: ingredientTerm || null,
+      // Primary filters
       routeNameFilter: newRoute.trim() || null,
+      companyNameFilter: newCompany.trim() || null,
+      // Advanced filters
+      statusFilter: newStatus,
       formNameFilter: newForm.trim() || null,
+      classFilter: newClass.trim() || null,
+      scheduleFilter: newSchedule.trim() || null,
+      atcFilter: newATC.trim() || null,
     }
 
     // Validate primary search before saving
@@ -122,6 +188,94 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
       return
     }
 
+    // If DIN is provided and valid, skip API validation (exact match)
+    if (dinTerm.length >= MIN_DIN_LENGTH) {
+      finalizeWatchlist(criteria)
+      return
+    }
+
+    // If brand search term entered, validate via API
+    if (searchTerm.length >= MIN_SEARCH_LENGTH) {
+      setIsSearching(true)
+      setSearchError(null)
+
+      try {
+        const results = await searchDrugProductsByBrandName(searchTerm)
+
+        // Extract unique brand names
+        const uniqueBrands = [...new Set(results.map(p => p.brand_name).filter(Boolean))]
+
+        if (uniqueBrands.length === 0) {
+          setSearchError(`No products found matching "${searchTerm}"`)
+          setIsSearching(false)
+          return
+        }
+
+        if (uniqueBrands.length === 1) {
+          // Single match - auto-select and create
+          criteria.searchTerm = uniqueBrands[0]
+          finalizeWatchlist(criteria)
+          return
+        }
+
+        // Multiple matches - show confirmation modal
+        setConfirmationSearchType('brand')
+        setConfirmationSearchTerm(searchTerm)
+        setConfirmationResults(uniqueBrands)
+        setPendingCriteria(criteria)
+        setConfirmationModalOpen(true)
+        setIsSearching(false)
+        return
+      } catch (error) {
+        console.error('Brand search failed:', error)
+        setSearchError('Failed to search products. Please try again.')
+        setIsSearching(false)
+        return
+      }
+    }
+
+    // If ingredient term entered, validate via API
+    if (ingredientTerm.length >= MIN_SEARCH_LENGTH) {
+      setIsSearching(true)
+      setSearchError(null)
+
+      try {
+        const results = await searchActiveIngredientsByName(ingredientTerm)
+        // Extract unique ingredient names
+        const uniqueIngredients = [...new Set(results.map(i => i.ingredient_name).filter(Boolean))]
+
+        if (uniqueIngredients.length === 0) {
+          setSearchError(`No ingredients found matching "${ingredientTerm}"`)
+          setIsSearching(false)
+          return
+        }
+
+        if (uniqueIngredients.length === 1) {
+          // Single match - auto-select and create
+          criteria.ingredientName = uniqueIngredients[0]
+          finalizeWatchlist(criteria)
+          return
+        }
+
+        // Multiple matches - show confirmation modal
+        setConfirmationSearchType('ingredient')
+        setConfirmationSearchTerm(ingredientTerm)
+        setConfirmationResults(uniqueIngredients)
+        setPendingCriteria(criteria)
+        setConfirmationModalOpen(true)
+        setIsSearching(false)
+        return
+      } catch (error) {
+        console.error('Ingredient search failed:', error)
+        setSearchError('Failed to search ingredients. Please try again.')
+        setIsSearching(false)
+        return
+      }
+    }
+  }
+
+  const finalizeWatchlist = (criteria: WatchlistCriteriaLive) => {
+    setIsSearching(false)
     if (editingWatchlist) {
       updateWatchlist(editingWatchlist.id, {
         name: newName,
@@ -134,17 +288,49 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     closeModal()
   }
 
+  const handleConfirmSelection = (selectedValue: string) => {
+    if (!pendingCriteria) return
+
+    const finalCriteria = { ...pendingCriteria }
+    if (confirmationSearchType === 'brand') {
+      finalCriteria.searchTerm = selectedValue
+    } else {
+      finalCriteria.ingredientName = selectedValue
+    }
+
+    setConfirmationModalOpen(false)
+    finalizeWatchlist(finalCriteria)
+  }
+
+  const handleCloseConfirmation = () => {
+    setConfirmationModalOpen(false)
+    setConfirmationResults([])
+    setPendingCriteria(null)
+  }
+
   const isModalOpen = showCreateModal || editingWatchlist !== null
 
   // Build criteria object to check validation
   const currentCriteria: WatchlistCriteriaLive = {
+    din: newDIN.trim() || null,
     searchTerm: newSearchTerm.trim() || null,
     ingredientName: newIngredient.trim() || null,
-    companyNameFilter: newCompany.trim() || null,
     routeNameFilter: newRoute.trim() || null,
+    companyNameFilter: newCompany.trim() || null,
+    statusFilter: newStatus,
     formNameFilter: newForm.trim() || null,
+    classFilter: newClass.trim() || null,
+    scheduleFilter: newSchedule.trim() || null,
+    atcFilter: newATC.trim() || null,
   }
   const hasValidSearch = hasValidPrimarySearch(currentCriteria)
+
+  // Check if any advanced filters are set
+  const hasAdvancedFiltersSet = newStatus !== null ||
+    newForm.trim() ||
+    newClass.trim() ||
+    newSchedule.trim() ||
+    newATC.trim()
 
   if (!isLoaded) {
     return (
@@ -386,17 +572,16 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                       Primary Search (Required)
                     </label>
                     <p className="text-xs text-primary-600 dark:text-primary-400 mt-0.5">
-                      At least one field below must have {MIN_SEARCH_LENGTH}+ characters. These search the Health Canada API directly.
+                      At least one: DIN ({MIN_DIN_LENGTH} digits), Product Name ({MIN_SEARCH_LENGTH}+ chars), or Ingredient ({MIN_SEARCH_LENGTH}+ chars)
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <BrandAutocomplete
-                    value={newSearchTerm}
-                    onChange={setNewSearchTerm}
-                    placeholder="e.g., Tylenol, Advil, Lipitor"
-                    label="Brand Name"
+                  {/* DIN Input */}
+                  <DINInput
+                    value={newDIN}
+                    onChange={setNewDIN}
                   />
 
                   <div className="flex items-center gap-3">
@@ -405,65 +590,125 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                     <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700" />
                   </div>
 
-                  <IngredientAutocomplete
-                    value={newIngredient}
-                    onChange={setNewIngredient}
-                    placeholder="e.g., Cefazolin, Metformin, Ibuprofen"
-                    label="Active Ingredient"
-                  />
-                </div>
-              </div>
-
-              {/* Optional Filters Section */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Optional Filters
-                </label>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-                  These filters are applied after fetching results from the API. They narrow down the search results.
-                </p>
-
-                <div className="space-y-3">
-                  <CompanyAutocomplete
-                    value={newCompany}
-                    onChange={setNewCompany}
-                    placeholder="e.g., APOTEX INC, PFIZER"
-                  />
-
+                  {/* Product Name and Ingredient side by side */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <RouteAutocomplete
-                      value={newRoute}
-                      onChange={setNewRoute}
-                      placeholder="e.g., Oral, Intravenous"
+                    <BrandAutocomplete
+                      value={newSearchTerm}
+                      onChange={setNewSearchTerm}
                     />
 
-                    <FormAutocomplete
-                      value={newForm}
-                      onChange={setNewForm}
-                      placeholder="e.g., Tablet, Capsule"
+                    <IngredientAutocomplete
+                      value={newIngredient}
+                      onChange={setNewIngredient}
                     />
                   </div>
                 </div>
               </div>
+
+              {/* Primary Filters Section */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  Filters
+                </label>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+                  Narrow down your search results
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <RouteAutocomplete
+                    value={newRoute}
+                    onChange={setNewRoute}
+                  />
+
+                  <CompanyAutocomplete
+                    value={newCompany}
+                    onChange={setNewCompany}
+                  />
+                </div>
+              </div>
+
+              {/* Advanced Filters Accordion */}
+              <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Advanced Filters
+                    {hasAdvancedFiltersSet && (
+                      <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">
+                        (active)
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-neutral-400 transition-transform ${
+                      showAdvancedFilters ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showAdvancedFilters && (
+                  <div className="p-4 space-y-3 border-t border-neutral-200 dark:border-neutral-700 animate-in slide-in-from-top-2 fade-in duration-150">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <StatusSelect
+                        value={newStatus}
+                        onChange={setNewStatus}
+                      />
+
+                      <FormAutocomplete
+                        value={newForm}
+                        onChange={setNewForm}
+                        label="Dosage Form"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <ClassAutocomplete
+                        value={newClass}
+                        onChange={setNewClass}
+                      />
+
+                      <ScheduleAutocomplete
+                        value={newSchedule}
+                        onChange={setNewSchedule}
+                      />
+                    </div>
+
+                    <ATCAutocomplete
+                      value={newATC}
+                      onChange={setNewATC}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-3 p-5 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50">
-              {!hasValidSearch && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Enter brand name or ingredient ({MIN_SEARCH_LENGTH}+ chars)
-                </p>
-              )}
-              {hasValidSearch && <div />}
+              <div className="flex-1">
+                {searchError && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {searchError}
+                  </p>
+                )}
+                {!hasValidSearch && !searchError && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Enter DIN ({MIN_DIN_LENGTH} digits), Product Name, or Ingredient ({MIN_SEARCH_LENGTH}+ chars)
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={closeModal}
-                  className="px-5 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+                  disabled={isSearching}
+                  className="px-5 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={!newName || !hasValidSearch}
+                  disabled={!newName || !hasValidSearch || isSearching}
                   className="
                     px-5 py-2.5
                     bg-primary-500 hover:bg-primary-600 disabled:bg-neutral-300 dark:disabled:bg-neutral-700
@@ -471,15 +716,27 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                     font-medium rounded-xl
                     transition-colors
                     disabled:cursor-not-allowed
+                    flex items-center gap-2
                   "
                 >
-                  {editingWatchlist ? 'Save Changes' : 'Create Watchlist'}
+                  {isSearching && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSearching ? 'Searching...' : (editingWatchlist ? 'Save Changes' : 'Create Watchlist')}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Search Confirmation Modal */}
+      <SearchConfirmationModal
+        isOpen={confirmationModalOpen}
+        onClose={handleCloseConfirmation}
+        onConfirm={handleConfirmSelection}
+        searchType={confirmationSearchType}
+        searchTerm={confirmationSearchTerm}
+        results={confirmationResults}
+      />
     </div>
   )
 }

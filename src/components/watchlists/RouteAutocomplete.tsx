@@ -32,11 +32,12 @@ export function RouteAutocomplete({
   const [inputValue, setInputValue] = useState(value)
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch all routes (cached for 24 hours)
-  const { data: routes, isLoading, isFetching } = useAllRoutes()
+  // Fetch all routes ONLY after user interacts (lazy load to avoid blocking other requests)
+  const { data: routes, isLoading, isFetching } = useAllRoutes(hasInteracted)
 
   // Filter routes based on input (client-side)
   const suggestions = useMemo(() => {
@@ -121,6 +122,7 @@ export function RouteAutocomplete({
 
   const handleFocus = () => {
     setIsFocused(true)
+    setHasInteracted(true) // Trigger lazy load on first focus
     if (routes && routes.length > 0) {
       setIsOpen(true)
     }

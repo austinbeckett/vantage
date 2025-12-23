@@ -85,8 +85,6 @@ export function DrugProductCardLive({
   }
 
   const primaryIngredient = product.activeIngredients[0]
-  const primaryRoute = product.routes[0]
-  const primaryForm = product.forms[0]
 
   return (
     <div
@@ -207,26 +205,28 @@ export function DrugProductCardLive({
               >
                 {product.companyName}
               </button>
-              {primaryRoute && (
+              {product.routes.map((route, idx) => (
                 <button
+                  key={`route-${idx}`}
                   onClick={() =>
-                    handleAttributeClick('route', primaryRoute.name, primaryRoute.name)
+                    handleAttributeClick('route', route.name, route.name)
                   }
                   className="px-3 py-1.5 rounded-lg text-sm font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-500/20 hover:border-sky-500/40 transition-all hover:shadow-sm hover:shadow-sky-500/20"
                 >
-                  {primaryRoute.name}
+                  {route.name}
                 </button>
-              )}
-              {primaryForm && (
+              ))}
+              {product.forms.map((form, idx) => (
                 <button
+                  key={`form-${idx}`}
                   onClick={() =>
-                    handleAttributeClick('form', primaryForm.name, primaryForm.name)
+                    handleAttributeClick('form', form.name, form.name)
                   }
                   className="px-3 py-1.5 rounded-lg text-sm font-medium bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all hover:shadow-sm hover:shadow-violet-500/20"
                 >
-                  {primaryForm.name}
+                  {form.name}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 

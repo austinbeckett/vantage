@@ -10,34 +10,67 @@ import { useState, useEffect, useCallback } from 'react'
 // -----------------------------------------------------------------------------
 
 export interface WatchlistCriteriaLive {
-  // PRIMARY SEARCH CRITERIA (API-supported, at least one required with 3+ chars)
-  /** Brand name search term (uses Health Canada API brandname parameter) */
+  // PRIMARY SEARCH CRITERIA (API-supported, at least one required)
+  /** Drug Identification Number - 8-digit unique identifier */
+  din: string | null
+  /** Product name search term (uses Health Canada API brandname parameter) */
   searchTerm: string | null
   /** Ingredient name search term (uses Health Canada API ingredientname parameter) */
   ingredientName: string | null
 
-  // POST-SEARCH FILTERS (client-side only, applied after API results are fetched)
-  /** Filter results by company/manufacturer name (case-insensitive partial match) */
-  companyNameFilter: string | null
-  /** Filter results by route of administration (case-insensitive partial match) */
+  // PRIMARY FILTERS (client-side, always visible)
+  /** Filter results by route of administration (exact match) */
   routeNameFilter: string | null
-  /** Filter results by pharmaceutical form (case-insensitive partial match) */
+  /** Filter results by company/manufacturer name (partial match) */
+  companyNameFilter: string | null
+
+  // ADVANCED FILTERS (client-side, in accordion)
+  /** Filter results by status code (exact match) */
+  statusFilter: number | null
+  /** Filter results by pharmaceutical/dosage form (exact match) */
   formNameFilter: string | null
+  /** Filter results by drug class (partial match) */
+  classFilter: string | null
+  /** Filter results by schedule (exact match) */
+  scheduleFilter: string | null
+  /** Filter results by ATC code (prefix match) */
+  atcFilter: string | null
 }
 
-/** Minimum characters required for API search */
-export const MIN_SEARCH_LENGTH = 3
+/** Minimum characters required for text-based API search */
+export const MIN_SEARCH_LENGTH = 5
+
+/** Minimum characters required for DIN search (DINs are 8 digits) */
+export const MIN_DIN_LENGTH = 8
 
 /** Check if criteria has a valid primary search term */
 export function hasValidPrimarySearch(criteria: WatchlistCriteriaLive): boolean {
+  const din = criteria.din?.trim() || ''
   const searchTerm = criteria.searchTerm?.trim() || ''
   const ingredientName = criteria.ingredientName?.trim() || ''
-  return searchTerm.length >= MIN_SEARCH_LENGTH || ingredientName.length >= MIN_SEARCH_LENGTH
+
+  // DIN requires 8 characters, text searches require 5
+  return din.length >= MIN_DIN_LENGTH ||
+         searchTerm.length >= MIN_SEARCH_LENGTH ||
+         ingredientName.length >= MIN_SEARCH_LENGTH
 }
 
 /** Get the primary search query from criteria */
 export function getPrimarySearchQuery(criteria: WatchlistCriteriaLive): string {
-  return criteria.searchTerm?.trim() || criteria.ingredientName?.trim() || ''
+  // DIN takes priority, then product name, then ingredient
+  return criteria.din?.trim() || criteria.searchTerm?.trim() || criteria.ingredientName?.trim() || ''
+}
+
+/** Determine the search type based on criteria */
+export function getSearchType(criteria: WatchlistCriteriaLive): 'din' | 'brand' | 'ingredient' | 'none' {
+  const din = criteria.din?.trim() || ''
+  const searchTerm = criteria.searchTerm?.trim() || ''
+  const ingredientName = criteria.ingredientName?.trim() || ''
+
+  if (din.length >= MIN_DIN_LENGTH) return 'din'
+  if (searchTerm.length >= MIN_SEARCH_LENGTH) return 'brand'
+  if (ingredientName.length >= MIN_SEARCH_LENGTH) return 'ingredient'
+  return 'none'
 }
 
 export interface WatchlistLive {

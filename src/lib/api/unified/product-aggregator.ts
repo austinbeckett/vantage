@@ -84,7 +84,8 @@ export async function fetchCompleteDPDProducts(
     return transformCompleteDPDProduct(data)
   })
 
-  return fetchParallel(requests, API_CONFIG.MAX_CONCURRENT_REQUESTS)
+  const results = await fetchParallel(requests, API_CONFIG.MAX_CONCURRENT_REQUESTS)
+  return results.filter((product): product is UnifiedDrugProduct => product !== null)
 }
 
 // -----------------------------------------------------------------------------

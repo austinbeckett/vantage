@@ -1,74 +1,83 @@
 // =============================================================================
-// Company Autocomplete
+// ATC Autocomplete
 // =============================================================================
-// Typeahead component for selecting companies from Health Canada reference data
-// Fetches all companies on first focus and filters client-side
+// Input for filtering by Anatomical Therapeutic Chemical (ATC) code
+// ATC codes follow a hierarchical structure: A00AA00
+// - 1st level (A): Anatomical main group
+// - 2nd level (00): Therapeutic subgroup
+// - 3rd level (A): Pharmacological subgroup
+// - 4th level (A): Chemical subgroup
+// - 5th level (00): Chemical substance
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Search, Loader2, X, Building2 } from 'lucide-react'
-import { useAllCompanies } from '../../lib/api/dpd/queries'
+import { Search, X, Dna } from 'lucide-react'
 
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
-interface CompanyAutocompleteProps {
+interface ATCAutocompleteProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   label?: string
 }
 
+// Common ATC code prefixes with descriptions
+// These are top-level anatomical groups and some common therapeutic subgroups
+const ATC_PREFIXES = [
+  { code: 'A', name: 'Alimentary tract and metabolism' },
+  { code: 'B', name: 'Blood and blood forming organs' },
+  { code: 'C', name: 'Cardiovascular system' },
+  { code: 'D', name: 'Dermatologicals' },
+  { code: 'G', name: 'Genito-urinary system and sex hormones' },
+  { code: 'H', name: 'Systemic hormonal preparations' },
+  { code: 'J', name: 'Antiinfectives for systemic use' },
+  { code: 'J01', name: 'Antibacterials for systemic use' },
+  { code: 'J01D', name: 'Other beta-lactam antibacterials' },
+  { code: 'J01DD', name: 'Third-generation cephalosporins' },
+  { code: 'L', name: 'Antineoplastic and immunomodulating agents' },
+  { code: 'M', name: 'Musculo-skeletal system' },
+  { code: 'N', name: 'Nervous system' },
+  { code: 'N02', name: 'Analgesics' },
+  { code: 'N05', name: 'Psycholeptics' },
+  { code: 'N06', name: 'Psychoanaleptics' },
+  { code: 'P', name: 'Antiparasitic products' },
+  { code: 'R', name: 'Respiratory system' },
+  { code: 'S', name: 'Sensory organs' },
+  { code: 'V', name: 'Various' },
+]
+
 // -----------------------------------------------------------------------------
 // Component
 // -----------------------------------------------------------------------------
 
-export function CompanyAutocomplete({
+export function ATCAutocomplete({
   value,
   onChange,
-  placeholder = 'e.g., APOTEX INC, PFIZER',
-  label = 'Company/Manufacturer',
-}: CompanyAutocompleteProps) {
+  placeholder = 'e.g., J01DD04, N02',
+  label = 'ATC Code',
+}: ATCAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value)
   const [isOpen, setIsOpen] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch all companies ONLY after user interacts (lazy load to avoid blocking other requests)
-  const { data: companies, isLoading, isFetching } = useAllCompanies(hasInteracted)
-
-  // Filter companies based on input (client-side)
+  // Filter ATC prefixes based on input
   const suggestions = useMemo(() => {
-    if (!companies || inputValue.trim().length < 2) return []
+    if (inputValue.trim().length === 0) {
+      // Show only top-level codes when empty
+      return ATC_PREFIXES.filter(atc => atc.code.length === 1)
+    }
 
-    const query = inputValue.toLowerCase().trim()
-
-    // Get unique company names and filter
-    const uniqueCompanies = new Map<string, string>()
-    companies.forEach(company => {
-      const name = company.company_name
-      const lowerName = name.toLowerCase()
-      if (lowerName.includes(query) && !uniqueCompanies.has(lowerName)) {
-        uniqueCompanies.set(lowerName, name)
-      }
-    })
-
-    // Sort by relevance (starts with query first, then alphabetically)
-    return Array.from(uniqueCompanies.values())
-      .sort((a, b) => {
-        const aLower = a.toLowerCase()
-        const bLower = b.toLowerCase()
-        const aStarts = aLower.startsWith(query)
-        const bStarts = bLower.startsWith(query)
-
-        if (aStarts && !bStarts) return -1
-        if (!aStarts && bStarts) return 1
-        return aLower.localeCompare(bLower)
-      })
-      .slice(0, 50) // Limit to 50 suggestions for performance
-  }, [companies, inputValue])
+    const query = inputValue.toUpperCase().trim()
+    return ATC_PREFIXES
+      .filter(atc =>
+        atc.code.toUpperCase().startsWith(query) ||
+        atc.name.toLowerCase().includes(query.toLowerCase())
+      )
+      .sort((a, b) => a.code.length - b.code.length || a.code.localeCompare(b.code))
+  }, [inputValue])
 
   // Sync external value changes
   useEffect(() => {
@@ -86,29 +95,16 @@ export function CompanyAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Show dropdown when we have suggestions and input is focused
-  useEffect(() => {
-    if (isFocused && suggestions.length > 0) {
-      setIsOpen(true)
-    }
-  }, [suggestions, isFocused])
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
+    const newValue = e.target.value.toUpperCase()
     setInputValue(newValue)
     onChange(newValue)
-
-    // Open dropdown if we have enough characters
-    if (newValue.trim().length >= 2) {
-      setIsOpen(true)
-    } else {
-      setIsOpen(false)
-    }
+    setIsOpen(true)
   }
 
-  const handleSelect = (companyName: string) => {
-    setInputValue(companyName)
-    onChange(companyName)
+  const handleSelect = (code: string) => {
+    setInputValue(code)
+    onChange(code)
     setIsOpen(false)
     inputRef.current?.blur()
   }
@@ -121,16 +117,10 @@ export function CompanyAutocomplete({
   }
 
   const handleFocus = () => {
-    setIsFocused(true)
-    setHasInteracted(true) // Trigger lazy load on first focus
-    if (inputValue.trim().length >= 2 && suggestions.length > 0) {
-      setIsOpen(true)
-    }
+    setIsOpen(true)
   }
 
   const handleBlur = () => {
-    setIsFocused(false)
-    // Delay closing to allow click on suggestion
     setTimeout(() => {
       if (!containerRef.current?.contains(document.activeElement)) {
         setIsOpen(false)
@@ -145,9 +135,7 @@ export function CompanyAutocomplete({
     }
   }
 
-  const showLoading = isLoading || isFetching
   const showSuggestions = isOpen && suggestions.length > 0
-  const showNoResults = isOpen && !showLoading && inputValue.trim().length >= 2 && suggestions.length === 0 && companies
 
   return (
     <div ref={containerRef} className="relative">
@@ -167,22 +155,19 @@ export function CompanyAutocomplete({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`
+          className="
             w-full px-4 py-2.5 pr-20
             bg-white dark:bg-neutral-800
-            border rounded-lg
+            border border-neutral-200 dark:border-neutral-700 rounded-lg
             text-neutral-900 dark:text-neutral-100
             placeholder:text-neutral-400
             focus:outline-none focus:ring-2 focus:ring-primary-500/30
-            border-neutral-200 dark:border-neutral-700
-          `}
+            font-mono uppercase
+          "
         />
 
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-          {showLoading && (
-            <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
-          )}
-          {inputValue && !showLoading && (
+          {inputValue && (
             <button
               type="button"
               onClick={handleClear}
@@ -200,39 +185,40 @@ export function CompanyAutocomplete({
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150">
           <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
             <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              {suggestions.length}{suggestions.length === 50 ? '+' : ''} compan{suggestions.length !== 1 ? 'ies' : 'y'} found
+              {suggestions.length} ATC code{suggestions.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="max-h-48 overflow-y-auto">
-            {suggestions.map((company, idx) => (
+            {suggestions.map((atc, idx) => (
               <button
-                key={`${company}-${idx}`}
+                key={`${atc.code}-${idx}`}
                 type="button"
-                onClick={() => handleSelect(company)}
+                onClick={() => handleSelect(atc.code)}
                 className={`
                   w-full px-4 py-2.5 text-left text-sm
-                  flex items-center gap-2
+                  flex items-center gap-3
                   hover:bg-primary-50 dark:hover:bg-primary-900/20
                   transition-colors
-                  ${inputValue.toLowerCase() === company.toLowerCase()
+                  ${inputValue.toUpperCase() === atc.code.toUpperCase()
                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                     : 'text-neutral-700 dark:text-neutral-300'
                   }
                 `}
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">{company}</span>
+                <Dna className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono font-medium shrink-0">{atc.code}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 truncate text-xs">
+                    {atc.name}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* No Results */}
-      {showNoResults && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden">
-          <div className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 text-center">
-            No companies found for "{inputValue}"
+          <div className="px-3 py-2 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
+            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+              Type any ATC code or prefix to filter
+            </span>
           </div>
         </div>
       )}

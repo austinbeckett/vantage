@@ -41,7 +41,7 @@ export const dpdQueryKeys = {
  * Fetch complete product data (aggregates multiple API calls)
  */
 async function fetchCompleteProduct(drugCode: number): Promise<CompleteDPDProduct> {
-  const [product, activeIngredients, routes, forms, statuses, therapeuticClass, schedules] =
+  const [product, activeIngredients, routes, forms, status, therapeuticClass, schedules] =
     await Promise.all([
       endpoints.fetchDrugProductByDrugCode(drugCode),
       endpoints.fetchActiveIngredients(drugCode),
@@ -53,11 +53,11 @@ async function fetchCompleteProduct(drugCode: number): Promise<CompleteDPDProduc
     ])
 
   return {
-    product: product[0],
+    product,
     activeIngredients,
     routes,
     forms,
-    statuses,
+    status,
     therapeuticClass,
     schedules,
   }
@@ -261,26 +261,30 @@ const REFERENCE_DATA_GC_TIME = 7 * 24 * 60 * 60 * 1000  // 7 days
 /**
  * Hook to fetch ALL routes of administration
  * Returns ~101 unique routes for autocomplete
+ * WARNING: API returns 66,000+ records - pass enabled=false until user interacts
  */
-export function useAllRoutes() {
+export function useAllRoutes(enabled: boolean = true) {
   return useQuery({
     queryKey: dpdQueryKeys.allRoutes(),
     queryFn: endpoints.fetchAllRoutes,
     staleTime: REFERENCE_DATA_STALE_TIME,
     gcTime: REFERENCE_DATA_GC_TIME,
+    enabled,
   })
 }
 
 /**
  * Hook to fetch ALL pharmaceutical forms
  * Returns ~130 unique forms for autocomplete
+ * WARNING: API returns 62,000+ records - pass enabled=false until user interacts
  */
-export function useAllForms() {
+export function useAllForms(enabled: boolean = true) {
   return useQuery({
     queryKey: dpdQueryKeys.allForms(),
     queryFn: endpoints.fetchAllForms,
     staleTime: REFERENCE_DATA_STALE_TIME,
     gcTime: REFERENCE_DATA_GC_TIME,
+    enabled,
   })
 }
 
@@ -288,12 +292,13 @@ export function useAllForms() {
  * Hook to fetch ALL companies
  * Returns ~5,215 unique companies for autocomplete
  */
-export function useAllCompanies() {
+export function useAllCompanies(enabled: boolean = true) {
   return useQuery({
     queryKey: dpdQueryKeys.allCompanies(),
     queryFn: endpoints.fetchAllCompanies,
     staleTime: REFERENCE_DATA_STALE_TIME,
     gcTime: REFERENCE_DATA_GC_TIME,
+    enabled,
   })
 }
 

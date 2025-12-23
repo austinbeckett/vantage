@@ -4,7 +4,7 @@
 // Transform Health Canada DPD API responses to application types
 
 import type { CompleteDPDProduct } from '../../../types/health-canada-api'
-import { getStatusInfo, parseStatusCode } from '../status-codes'
+import { getStatusInfo } from '../status-codes'
 
 // -----------------------------------------------------------------------------
 // Unified Drug Product Type (for application use)

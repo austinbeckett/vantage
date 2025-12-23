@@ -1,74 +1,81 @@
 // =============================================================================
-// Company Autocomplete
+// Schedule Autocomplete
 // =============================================================================
-// Typeahead component for selecting companies from Health Canada reference data
-// Fetches all companies on first focus and filters client-side
+// Typeahead for selecting drug schedules
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Search, Loader2, X, Building2 } from 'lucide-react'
-import { useAllCompanies } from '../../lib/api/dpd/queries'
+import { Search, X, Calendar } from 'lucide-react'
 
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
-interface CompanyAutocompleteProps {
+interface ScheduleAutocompleteProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   label?: string
 }
 
+// Common schedule values from Health Canada DPD
+// These are the most commonly seen schedule values in the database
+const COMMON_SCHEDULES = [
+  'Prescription',
+  'OTC',
+  'Schedule I',
+  'Schedule II',
+  'Schedule III',
+  'Schedule IV',
+  'Schedule V',
+  'Schedule VI',
+  'Schedule C',
+  'Schedule D',
+  'Schedule F',
+  'Schedule G',
+  'Narcotic',
+  'Controlled Drug (CDSA I)',
+  'Controlled Drug (CDSA II)',
+  'Controlled Drug (CDSA III)',
+  'Controlled Drug (CDSA IV)',
+  'Targeted (CDSA IV)',
+  'Ethical',
+  'Unscheduled',
+]
+
 // -----------------------------------------------------------------------------
 // Component
 // -----------------------------------------------------------------------------
 
-export function CompanyAutocomplete({
+export function ScheduleAutocomplete({
   value,
   onChange,
-  placeholder = 'e.g., APOTEX INC, PFIZER',
-  label = 'Company/Manufacturer',
-}: CompanyAutocompleteProps) {
+  placeholder = 'e.g., Prescription, OTC',
+  label = 'Schedule',
+}: ScheduleAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value)
   const [isOpen, setIsOpen] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch all companies ONLY after user interacts (lazy load to avoid blocking other requests)
-  const { data: companies, isLoading, isFetching } = useAllCompanies(hasInteracted)
-
-  // Filter companies based on input (client-side)
+  // Filter schedules based on input
   const suggestions = useMemo(() => {
-    if (!companies || inputValue.trim().length < 2) return []
+    if (inputValue.trim().length === 0) {
+      return COMMON_SCHEDULES
+    }
 
     const query = inputValue.toLowerCase().trim()
-
-    // Get unique company names and filter
-    const uniqueCompanies = new Map<string, string>()
-    companies.forEach(company => {
-      const name = company.company_name
-      const lowerName = name.toLowerCase()
-      if (lowerName.includes(query) && !uniqueCompanies.has(lowerName)) {
-        uniqueCompanies.set(lowerName, name)
-      }
-    })
-
-    // Sort by relevance (starts with query first, then alphabetically)
-    return Array.from(uniqueCompanies.values())
+    return COMMON_SCHEDULES
+      .filter(schedule => schedule.toLowerCase().includes(query))
       .sort((a, b) => {
         const aLower = a.toLowerCase()
         const bLower = b.toLowerCase()
         const aStarts = aLower.startsWith(query)
         const bStarts = bLower.startsWith(query)
-
         if (aStarts && !bStarts) return -1
         if (!aStarts && bStarts) return 1
         return aLower.localeCompare(bLower)
       })
-      .slice(0, 50) // Limit to 50 suggestions for performance
-  }, [companies, inputValue])
+  }, [inputValue])
 
   // Sync external value changes
   useEffect(() => {
@@ -86,29 +93,16 @@ export function CompanyAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Show dropdown when we have suggestions and input is focused
-  useEffect(() => {
-    if (isFocused && suggestions.length > 0) {
-      setIsOpen(true)
-    }
-  }, [suggestions, isFocused])
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setInputValue(newValue)
     onChange(newValue)
-
-    // Open dropdown if we have enough characters
-    if (newValue.trim().length >= 2) {
-      setIsOpen(true)
-    } else {
-      setIsOpen(false)
-    }
+    setIsOpen(true)
   }
 
-  const handleSelect = (companyName: string) => {
-    setInputValue(companyName)
-    onChange(companyName)
+  const handleSelect = (schedule: string) => {
+    setInputValue(schedule)
+    onChange(schedule)
     setIsOpen(false)
     inputRef.current?.blur()
   }
@@ -121,16 +115,10 @@ export function CompanyAutocomplete({
   }
 
   const handleFocus = () => {
-    setIsFocused(true)
-    setHasInteracted(true) // Trigger lazy load on first focus
-    if (inputValue.trim().length >= 2 && suggestions.length > 0) {
-      setIsOpen(true)
-    }
+    setIsOpen(true)
   }
 
   const handleBlur = () => {
-    setIsFocused(false)
-    // Delay closing to allow click on suggestion
     setTimeout(() => {
       if (!containerRef.current?.contains(document.activeElement)) {
         setIsOpen(false)
@@ -145,9 +133,7 @@ export function CompanyAutocomplete({
     }
   }
 
-  const showLoading = isLoading || isFetching
   const showSuggestions = isOpen && suggestions.length > 0
-  const showNoResults = isOpen && !showLoading && inputValue.trim().length >= 2 && suggestions.length === 0 && companies
 
   return (
     <div ref={containerRef} className="relative">
@@ -167,22 +153,18 @@ export function CompanyAutocomplete({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`
+          className="
             w-full px-4 py-2.5 pr-20
             bg-white dark:bg-neutral-800
-            border rounded-lg
+            border border-neutral-200 dark:border-neutral-700 rounded-lg
             text-neutral-900 dark:text-neutral-100
             placeholder:text-neutral-400
             focus:outline-none focus:ring-2 focus:ring-primary-500/30
-            border-neutral-200 dark:border-neutral-700
-          `}
+          "
         />
 
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-          {showLoading && (
-            <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
-          )}
-          {inputValue && !showLoading && (
+          {inputValue && (
             <button
               type="button"
               onClick={handleClear}
@@ -200,39 +182,30 @@ export function CompanyAutocomplete({
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150">
           <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
             <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              {suggestions.length}{suggestions.length === 50 ? '+' : ''} compan{suggestions.length !== 1 ? 'ies' : 'y'} found
+              {suggestions.length} schedule{suggestions.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="max-h-48 overflow-y-auto">
-            {suggestions.map((company, idx) => (
+            {suggestions.map((schedule, idx) => (
               <button
-                key={`${company}-${idx}`}
+                key={`${schedule}-${idx}`}
                 type="button"
-                onClick={() => handleSelect(company)}
+                onClick={() => handleSelect(schedule)}
                 className={`
                   w-full px-4 py-2.5 text-left text-sm
                   flex items-center gap-2
                   hover:bg-primary-50 dark:hover:bg-primary-900/20
                   transition-colors
-                  ${inputValue.toLowerCase() === company.toLowerCase()
+                  ${inputValue.toLowerCase() === schedule.toLowerCase()
                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                     : 'text-neutral-700 dark:text-neutral-300'
                   }
                 `}
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">{company}</span>
+                <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="truncate">{schedule}</span>
               </button>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* No Results */}
-      {showNoResults && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden">
-          <div className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 text-center">
-            No companies found for "{inputValue}"
           </div>
         </div>
       )}

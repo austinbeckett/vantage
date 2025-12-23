@@ -6,9 +6,10 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Bell, BellOff, Pencil, Trash2, Loader2, AlertCircle, RefreshCw, Filter } from 'lucide-react'
-import { useWatchlistStorage, hasValidPrimarySearch, MIN_SEARCH_LENGTH, getPrimarySearchQuery } from '../lib/hooks'
-import { useUnifiedSearch, SEARCH_LIMITS } from '../lib/api/unified/queries'
+import { useWatchlistStorage, hasValidPrimarySearch, MIN_SEARCH_LENGTH, getPrimarySearchQuery, getSearchType } from '../lib/hooks'
+import { useUnifiedSearch, SEARCH_LIMITS, useProductByDIN } from '../lib/api/unified/queries'
 import { DrugProductCardLive } from '../components/search/DrugProductCardLive'
+import { getStatusName } from '../lib/api/status-codes'
 
 const PRODUCTS_PER_PAGE = 50
 
@@ -20,44 +21,81 @@ export default function WatchlistDetailLive() {
   const { getWatchlist, toggleNotifications, deleteWatchlist, isLoaded } = useWatchlistStorage()
   const watchlist = id ? getWatchlist(id) : undefined
 
-  // Build search query from criteria - only use API-supported fields
-  // Health Canada API only supports brandname and ingredientname searches
-  const searchQuery = useMemo(() => {
-    if (!watchlist) return ''
-    return getPrimarySearchQuery(watchlist.criteria)
+  // Determine search type based on which field was filled
+  const searchTypeValue = useMemo(() => {
+    if (!watchlist) return 'none'
+    return getSearchType(watchlist.criteria)
   }, [watchlist])
 
-  // Determine search type based on which field was filled
-  const searchType = useMemo((): 'brand' | 'ingredient' | 'auto' => {
-    if (!watchlist) return 'auto'
-    // If ingredient is specified, use ingredient search
-    if (watchlist.criteria.ingredientName?.trim()) {
-      return 'ingredient'
+  // Build search query from criteria - only use API-supported fields
+  const searchQuery = useMemo(() => {
+    if (!watchlist) return ''
+    // For DIN search, the query is the DIN
+    if (searchTypeValue === 'din') {
+      return watchlist.criteria.din?.trim() || ''
     }
-    // If brand/search term is specified, use brand search
-    if (watchlist.criteria.searchTerm?.trim()) {
-      return 'brand'
-    }
-    return 'auto'
-  }, [watchlist])
+    return getPrimarySearchQuery(watchlist.criteria)
+  }, [watchlist, searchTypeValue])
 
   // Check if watchlist has valid primary search criteria
   const hasValidSearch = watchlist ? hasValidPrimarySearch(watchlist.criteria) : false
+  const isDINSearch = searchTypeValue === 'din'
 
-  // Use the unified search hook with the criteria, correct search type, and high limit for watchlists
+  // Determine the search type for unified search (brand/ingredient/auto)
+  const unifiedSearchType = useMemo((): 'brand' | 'ingredient' | 'auto' => {
+    if (searchTypeValue === 'ingredient') return 'ingredient'
+    if (searchTypeValue === 'brand') return 'brand'
+    return 'auto'
+  }, [searchTypeValue])
+
+  // Use the unified search hook for brand/ingredient searches
   const {
     data: searchResults,
-    isLoading,
-    error,
-    refetch,
-  } = useUnifiedSearch(searchQuery, hasValidSearch, searchType, SEARCH_LIMITS.WATCHLIST)
+    isLoading: isSearchLoading,
+    error: searchError,
+    refetch: refetchSearch,
+  } = useUnifiedSearch(
+    isDINSearch ? '' : searchQuery,
+    hasValidSearch && !isDINSearch,
+    unifiedSearchType,
+    SEARCH_LIMITS.WATCHLIST
+  )
+
+  // Use the DIN search hook for DIN-based watchlists
+  const {
+    data: dinProduct,
+    isLoading: isDINLoading,
+    error: dinError,
+    refetch: refetchDIN,
+  } = useProductByDIN(isDINSearch && hasValidSearch ? searchQuery : null)
+
+  // Combine loading/error states
+  const isLoading = isDINSearch ? isDINLoading : isSearchLoading
+  const error = isDINSearch ? dinError : searchError
+  const refetch = isDINSearch ? refetchDIN : refetchSearch
 
   // Filter results based on post-search filter criteria (client-side only)
   const matchingProducts = useMemo(() => {
-    if (!searchResults?.products || !watchlist) return []
+    if (!watchlist) return []
+
+    // For DIN search, we get a single product
+    if (isDINSearch) {
+      return dinProduct ? [dinProduct] : []
+    }
+
+    // For brand/ingredient search, filter the results
+    if (!searchResults?.products) return []
 
     return searchResults.products.filter(product => {
-      // Company filter (applied client-side - API doesn't support company search)
+      // Route filter (exact match)
+      if (watchlist.criteria.routeNameFilter) {
+        const routeMatch = product.routes.some(r =>
+          r.name.toLowerCase() === watchlist.criteria.routeNameFilter!.toLowerCase()
+        )
+        if (!routeMatch) return false
+      }
+
+      // Company filter (partial match)
       if (watchlist.criteria.companyNameFilter) {
         const companyMatch = product.companyName
           .toLowerCase()
@@ -65,31 +103,56 @@ export default function WatchlistDetailLive() {
         if (!companyMatch) return false
       }
 
-      // Route filter (applied client-side - API doesn't support route search)
-      if (watchlist.criteria.routeNameFilter) {
-        const routeMatch = product.routes.some(r =>
-          r.name.toLowerCase().includes(watchlist.criteria.routeNameFilter!.toLowerCase())
-        )
-        if (!routeMatch) return false
+      // Status filter (exact match on status code)
+      if (watchlist.criteria.statusFilter !== null && watchlist.criteria.statusFilter !== undefined) {
+        if (product.statusCode !== watchlist.criteria.statusFilter) return false
       }
 
-      // Form filter (applied client-side - API doesn't support form search)
+      // Form filter (exact match)
       if (watchlist.criteria.formNameFilter) {
         const formMatch = product.forms.some(f =>
-          f.name.toLowerCase().includes(watchlist.criteria.formNameFilter!.toLowerCase())
+          f.name.toLowerCase() === watchlist.criteria.formNameFilter!.toLowerCase()
         )
         if (!formMatch) return false
       }
 
+      // Class filter (partial match on className)
+      if (watchlist.criteria.classFilter) {
+        const classMatch = product.className
+          .toLowerCase()
+          .includes(watchlist.criteria.classFilter.toLowerCase())
+        if (!classMatch) return false
+      }
+
+      // Schedule filter (exact match on any schedule)
+      if (watchlist.criteria.scheduleFilter) {
+        const scheduleMatch = product.schedules.some(s =>
+          s.toLowerCase() === watchlist.criteria.scheduleFilter!.toLowerCase()
+        )
+        if (!scheduleMatch) return false
+      }
+
+      // ATC filter (prefix match on atcCode)
+      if (watchlist.criteria.atcFilter) {
+        const atcMatch = product.atcCode?.toUpperCase().startsWith(
+          watchlist.criteria.atcFilter.toUpperCase()
+        )
+        if (!atcMatch) return false
+      }
+
       return true
     })
-  }, [searchResults, watchlist])
+  }, [searchResults, watchlist, isDINSearch, dinProduct])
 
   // Check if any filters are active
   const hasActiveFilters = watchlist && (
-    watchlist.criteria.companyNameFilter ||
     watchlist.criteria.routeNameFilter ||
-    watchlist.criteria.formNameFilter
+    watchlist.criteria.companyNameFilter ||
+    watchlist.criteria.statusFilter !== null ||
+    watchlist.criteria.formNameFilter ||
+    watchlist.criteria.classFilter ||
+    watchlist.criteria.scheduleFilter ||
+    watchlist.criteria.atcFilter
   )
 
   // Pagination: only show visibleCount products at a time
@@ -137,25 +200,40 @@ export default function WatchlistDetailLive() {
   const filterLabels: { type: string; label: string; isFilter: boolean }[] = []
 
   // Primary search criteria (API-supported)
+  if (watchlist.criteria.din) {
+    searchLabels.push({ type: 'din', label: `DIN: ${watchlist.criteria.din}`, isFilter: false })
+  }
   if (watchlist.criteria.searchTerm) {
-    searchLabels.push({ type: 'search', label: `Brand: "${watchlist.criteria.searchTerm}"`, isFilter: false })
+    searchLabels.push({ type: 'search', label: `Product: "${watchlist.criteria.searchTerm}"`, isFilter: false })
   }
   if (watchlist.criteria.ingredientName) {
     searchLabels.push({ type: 'ingredient', label: `Ingredient: ${watchlist.criteria.ingredientName}`, isFilter: false })
   }
 
-  // Post-search filters (client-side)
+  // Primary filters (always visible in UI)
+  if (watchlist.criteria.routeNameFilter) {
+    filterLabels.push({ type: 'route', label: watchlist.criteria.routeNameFilter, isFilter: true })
+  }
   if (watchlist.criteria.companyNameFilter) {
     filterLabels.push({ type: 'company', label: watchlist.criteria.companyNameFilter, isFilter: true })
   }
-  if (watchlist.criteria.routeNameFilter) {
-    filterLabels.push({ type: 'route', label: watchlist.criteria.routeNameFilter, isFilter: true })
+
+  // Advanced filters
+  if (watchlist.criteria.statusFilter !== null && watchlist.criteria.statusFilter !== undefined) {
+    filterLabels.push({ type: 'status', label: getStatusName(watchlist.criteria.statusFilter), isFilter: true })
   }
   if (watchlist.criteria.formNameFilter) {
     filterLabels.push({ type: 'form', label: watchlist.criteria.formNameFilter, isFilter: true })
   }
-
-  const criteriaLabels = [...searchLabels, ...filterLabels]
+  if (watchlist.criteria.classFilter) {
+    filterLabels.push({ type: 'class', label: watchlist.criteria.classFilter, isFilter: true })
+  }
+  if (watchlist.criteria.scheduleFilter) {
+    filterLabels.push({ type: 'schedule', label: watchlist.criteria.scheduleFilter, isFilter: true })
+  }
+  if (watchlist.criteria.atcFilter) {
+    filterLabels.push({ type: 'atc', label: `ATC: ${watchlist.criteria.atcFilter}`, isFilter: true })
+  }
 
   const handleToggleNotifications = () => {
     toggleNotifications(watchlist.id)
@@ -242,7 +320,9 @@ export default function WatchlistDetailLive() {
                 key={idx}
                 className={`
                   inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium
-                  ${criteria.type === 'search'
+                  ${criteria.type === 'din'
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-mono'
+                    : criteria.type === 'search'
                     ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                     : 'bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300'
                   }
@@ -261,22 +341,40 @@ export default function WatchlistDetailLive() {
               <Filter className="w-3 h-3" />
               Filters:
             </span>
-            {filterLabels.map((criteria, idx) => (
-              <span
-                key={idx}
-                className={`
-                  inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
-                  ${criteria.type === 'company'
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : criteria.type === 'route'
-                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                  }
-                `}
-              >
-                {criteria.label}
-              </span>
-            ))}
+            {filterLabels.map((criteria, idx) => {
+              let colorClasses = 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+              switch (criteria.type) {
+                case 'route':
+                  colorClasses = 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300'
+                  break
+                case 'company':
+                  colorClasses = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                  break
+                case 'status':
+                  colorClasses = 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                  break
+                case 'form':
+                  colorClasses = 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+                  break
+                case 'class':
+                  colorClasses = 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
+                  break
+                case 'schedule':
+                  colorClasses = 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                  break
+                case 'atc':
+                  colorClasses = 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 font-mono'
+                  break
+              }
+              return (
+                <span
+                  key={idx}
+                  className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${colorClasses}`}
+                >
+                  {criteria.label}
+                </span>
+              )
+            })}
           </div>
         )}
 
@@ -345,7 +443,7 @@ export default function WatchlistDetailLive() {
               Invalid Search Criteria
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
-              This watchlist needs a brand name or ingredient with at least {MIN_SEARCH_LENGTH} characters
+              This watchlist needs a valid DIN (8 digits), or a product name or ingredient with at least {MIN_SEARCH_LENGTH} characters
               to search the Health Canada API. Edit the watchlist to add valid search criteria.
             </p>
             <Link
