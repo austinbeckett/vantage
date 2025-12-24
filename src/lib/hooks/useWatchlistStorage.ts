@@ -107,6 +107,8 @@ export interface WatchlistLive {
   notificationsActive: boolean
   createdAt: string
   lastUpdated: string
+  /** Indicates AI is currently generating the name and description */
+  isGeneratingMetadata?: boolean
 }
 
 // -----------------------------------------------------------------------------
@@ -159,7 +161,8 @@ export function useWatchlistStorage() {
   const createWatchlist = useCallback((
     name: string,
     description: string,
-    criteria: WatchlistCriteriaLive
+    criteria: WatchlistCriteriaLive,
+    isGeneratingMetadata: boolean = false
   ): WatchlistLive => {
     const now = new Date().toISOString()
     const newWatchlist: WatchlistLive = {
@@ -170,6 +173,7 @@ export function useWatchlistStorage() {
       notificationsActive: true,
       createdAt: now,
       lastUpdated: now,
+      isGeneratingMetadata,
     }
 
     setWatchlists(prev => [newWatchlist, ...prev])
@@ -207,6 +211,11 @@ export function useWatchlistStorage() {
     return watchlists.find(wl => wl.id === id)
   }, [watchlists])
 
+  // Check if a watchlist still exists (useful for async operations)
+  const watchlistExists = useCallback((id: string): boolean => {
+    return watchlists.some(wl => wl.id === id)
+  }, [watchlists])
+
   return {
     watchlists,
     isLoaded,
@@ -215,5 +224,6 @@ export function useWatchlistStorage() {
     deleteWatchlist,
     toggleNotifications,
     getWatchlist,
+    watchlistExists,
   }
 }

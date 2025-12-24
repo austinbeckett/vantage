@@ -3,7 +3,7 @@
 // =============================================================================
 // Displays a single watchlist with its criteria
 
-import { Eye, Bell, BellOff, Pencil, Trash2, Search, Building2, Route, Pill, Filter, Hash, Activity, Tag, Calendar, Dna } from 'lucide-react'
+import { Eye, Bell, BellOff, Pencil, Trash2, Search, Building2, Route, Pill, Filter, Hash, Activity, Tag, Calendar, Dna, Loader2 } from 'lucide-react'
 import type { WatchlistLive } from '../../lib/hooks'
 import { getStatusName } from '../../lib/api/status-codes'
 
@@ -124,12 +124,28 @@ export function WatchlistCardLive({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-              {watchlist.name}
-            </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
-              {watchlist.description}
-            </p>
+            {watchlist.isGeneratingMetadata ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                  <h3 className="font-semibold text-neutral-500 dark:text-neutral-400 truncate">
+                    Generating name...
+                  </h3>
+                </div>
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-0.5 line-clamp-2 italic">
+                  AI is creating a name and description based on your criteria
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                  {watchlist.name}
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                  {watchlist.description}
+                </p>
+              </>
+            )}
           </div>
           <button
             onClick={onToggleNotifications}
@@ -226,13 +242,27 @@ export function WatchlistCardLive({
         <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-700" />
         <button
           onClick={onEdit}
-          className="flex items-center justify-center p-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+          disabled={watchlist.isGeneratingMetadata}
+          className={`
+            flex items-center justify-center p-3 transition-colors
+            ${watchlist.isGeneratingMetadata
+              ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+              : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
+            }
+          `}
         >
           <Pencil className="w-4 h-4" />
         </button>
         <button
           onClick={onDelete}
-          className="flex items-center justify-center p-3 text-neutral-400 hover:text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
+          disabled={watchlist.isGeneratingMetadata}
+          className={`
+            flex items-center justify-center p-3 transition-colors
+            ${watchlist.isGeneratingMetadata
+              ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+              : 'text-neutral-400 hover:text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20'
+            }
+          `}
         >
           <Trash2 className="w-4 h-4" />
         </button>

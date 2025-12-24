@@ -26,6 +26,7 @@ import { ScheduleAutocomplete } from './ScheduleAutocomplete'
 import { ATCAutocomplete } from './ATCAutocomplete'
 import { SearchConfirmationModal } from './SearchConfirmationModal'
 import { searchDrugProductsByBrandName, searchActiveIngredientsByName } from '../../lib/api/dpd/endpoints'
+import { generateWatchlistMetadata } from '../../lib/api/ai'
 import type { ApiError } from '../../lib/api/client'
 
 // -----------------------------------------------------------------------------
@@ -304,18 +305,50 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     }
   }
 
-  const finalizeWatchlist = (criteria: WatchlistCriteriaLive) => {
+  const finalizeWatchlist = async (criteria: WatchlistCriteriaLive) => {
     setIsSearching(false)
+
     if (editingWatchlist) {
+      // EDIT mode: use user-provided name/description
       updateWatchlist(editingWatchlist.id, {
         name: newName,
         description: newDescription,
         criteria,
       })
+      closeModal()
     } else {
-      createWatchlist(newName, newDescription, criteria)
+      // CREATE mode: generate AI name/description
+      const placeholderName = 'Generating...'
+      const placeholderDescription = 'AI is creating a name and description based on your criteria'
+
+      // Create with placeholder immediately (shows loading state)
+      const newWatchlist = createWatchlist(
+        placeholderName,
+        placeholderDescription,
+        criteria,
+        true // isGeneratingMetadata = true
+      )
+
+      closeModal()
+
+      // Generate AI metadata in background
+      try {
+        const metadata = await generateWatchlistMetadata(criteria)
+
+        // Update the watchlist with AI-generated name/description
+        updateWatchlist(newWatchlist.id, {
+          name: metadata.name,
+          description: metadata.description,
+          isGeneratingMetadata: false,
+        })
+      } catch (error) {
+        console.error('AI metadata generation failed:', error)
+        // Clear the generating flag on error
+        updateWatchlist(newWatchlist.id, {
+          isGeneratingMetadata: false,
+        })
+      }
     }
-    closeModal()
   }
 
   const handleConfirmSelection = (selectedValues: string[]) => {
@@ -555,47 +588,52 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
             </div>
 
             <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Watchlist Name
-                </label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g., Cefazolin IV Products"
-                  className="
-                    w-full px-4 py-3
-                    bg-white dark:bg-neutral-800
-                    border border-neutral-200 dark:border-neutral-700
-                    rounded-xl
-                    text-neutral-900 dark:text-neutral-100
-                    placeholder:text-neutral-400
-                    focus:outline-none focus:ring-2 focus:ring-primary-500/30
-                  "
-                />
-              </div>
+              {/* Name and Description fields - only show in EDIT mode */}
+              {editingWatchlist && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      Watchlist Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="e.g., Cefazolin IV Products"
+                      className="
+                        w-full px-4 py-3
+                        bg-white dark:bg-neutral-800
+                        border border-neutral-200 dark:border-neutral-700
+                        rounded-xl
+                        text-neutral-900 dark:text-neutral-100
+                        placeholder:text-neutral-400
+                        focus:outline-none focus:ring-2 focus:ring-primary-500/30
+                      "
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Brief description of what you're monitoring"
-                  className="
-                    w-full px-4 py-3
-                    bg-white dark:bg-neutral-800
-                    border border-neutral-200 dark:border-neutral-700
-                    rounded-xl
-                    text-neutral-900 dark:text-neutral-100
-                    placeholder:text-neutral-400
-                    focus:outline-none focus:ring-2 focus:ring-primary-500/30
-                  "
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Brief description of what you're monitoring"
+                      className="
+                        w-full px-4 py-3
+                        bg-white dark:bg-neutral-800
+                        border border-neutral-200 dark:border-neutral-700
+                        rounded-xl
+                        text-neutral-900 dark:text-neutral-100
+                        placeholder:text-neutral-400
+                        focus:outline-none focus:ring-2 focus:ring-primary-500/30
+                      "
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Primary Search Section */}
               <div className="space-y-3">
@@ -727,7 +765,7 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={!newName || !hasValidSearch || isSearching}
+                  disabled={(editingWatchlist && !newName) || !hasValidSearch || isSearching}
                   className="
                     px-5 py-2.5
                     bg-primary-500 hover:bg-primary-600 disabled:bg-neutral-300 dark:disabled:bg-neutral-700
