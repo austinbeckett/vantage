@@ -4,26 +4,19 @@
 // Manages user watchlists with criteria that query the live Health Canada API
 
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Search, Eye, Bell, X, Loader2, ChevronDown } from 'lucide-react'
+import { Plus, Search, Eye, Bell, X, Loader2 } from 'lucide-react'
 import {
   useWatchlistStorage,
   hasValidPrimarySearch,
   MIN_SEARCH_LENGTH,
-  MIN_DIN_LENGTH,
   type WatchlistLive,
   type WatchlistCriteriaLive
 } from '../../lib/hooks'
 import { WatchlistCardLive } from './WatchlistCardLive'
 import { IngredientAutocomplete } from './IngredientAutocomplete'
 import { BrandAutocomplete } from './BrandAutocomplete'
-import { CompanyAutocomplete } from './CompanyAutocomplete'
 import { RouteAutocomplete } from './RouteAutocomplete'
 import { FormAutocomplete } from './FormAutocomplete'
-import { DINInput } from './DINInput'
-import { StatusSelect } from './StatusSelect'
-import { ClassAutocomplete } from './ClassAutocomplete'
-import { ScheduleAutocomplete } from './ScheduleAutocomplete'
-import { ATCAutocomplete } from './ATCAutocomplete'
 import { SearchConfirmationModal } from './SearchConfirmationModal'
 import { searchDrugProductsByBrandName, searchActiveIngredientsByName } from '../../lib/api/dpd/endpoints'
 import { generateWatchlistMetadata } from '../../lib/api/ai'
@@ -55,22 +48,14 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingWatchlist, setEditingWatchlist] = useState<WatchlistLive | null>(null)
 
-  // Form state - Primary search
+  // Form state - Primary search and notification-scope filters
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
-  const [newDIN, setNewDIN] = useState('')
   const [newSearchTerm, setNewSearchTerm] = useState('')
   const [newIngredient, setNewIngredient] = useState('')
-
-  // Form state - Filters (all support multi-select)
-  const [newRoute, setNewRoute] = useState<string[]>([])
-  const [newCompany, setNewCompany] = useState<string[]>([])
-  const [newStatus, setNewStatus] = useState<number[]>([])
-  const [newForm, setNewForm] = useState<string[]>([])
-  const [newClass, setNewClass] = useState<string[]>([])
-  const [newSchedule, setNewSchedule] = useState<string[]>([])
-  const [newATC, setNewATC] = useState<string[]>([])
-  const [showFilters, setShowFilters] = useState(false)
+  // Route/Form filters (notification scope - apply to DPD and NOC)
+  const [newRoutes, setNewRoutes] = useState<string[]>([])
+  const [newForms, setNewForms] = useState<string[]>([])
 
   // Search confirmation modal state
   const [isSearching, setIsSearching] = useState(false)
@@ -106,17 +91,10 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const resetForm = () => {
     setNewName('')
     setNewDescription('')
-    setNewDIN('')
     setNewSearchTerm('')
     setNewIngredient('')
-    setNewRoute([])
-    setNewCompany([])
-    setNewStatus([])
-    setNewForm([])
-    setNewClass([])
-    setNewSchedule([])
-    setNewATC([])
-    setShowFilters(false)
+    setNewRoutes([])
+    setNewForms([])
     // Reset confirmation modal state
     setIsSearching(false)
     setSearchError(null)
@@ -135,26 +113,11 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     setNewName(watchlist.name)
     setNewDescription(watchlist.description)
     // Primary search
-    setNewDIN(watchlist.criteria.din || '')
     setNewSearchTerm(watchlist.criteria.searchTerm || '')
     setNewIngredient(watchlist.criteria.ingredientName || '')
-    // Filters (all arrays)
-    setNewRoute(watchlist.criteria.routeNameFilter || [])
-    setNewCompany(watchlist.criteria.companyNameFilter || [])
-    setNewStatus(watchlist.criteria.statusFilter || [])
-    setNewForm(watchlist.criteria.formNameFilter || [])
-    setNewClass(watchlist.criteria.classFilter || [])
-    setNewSchedule(watchlist.criteria.scheduleFilter || [])
-    setNewATC(watchlist.criteria.atcFilter || [])
-    // Show filters if any are set
-    const hasFilters = (watchlist.criteria.routeNameFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.companyNameFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.statusFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.formNameFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.classFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.scheduleFilter?.length ?? 0) > 0 ||
-                       (watchlist.criteria.atcFilter?.length ?? 0) > 0
-    setShowFilters(hasFilters)
+    // Route/Form filters (notification scope)
+    setNewRoutes(watchlist.criteria.routeFilter || [])
+    setNewForms(watchlist.criteria.formFilter || [])
   }
 
   const handleToggleNotifications = (id: string) => {
@@ -183,31 +146,16 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
 
     const searchTerm = newSearchTerm.trim()
     const ingredientTerm = newIngredient.trim()
-    const dinTerm = newDIN.trim()
 
     const criteria: WatchlistCriteriaLive = {
-      // Primary search
-      din: dinTerm || null,
       searchTerm: searchTerm || null,
       ingredientName: ingredientTerm || null,
-      // Filters (arrays, only include if non-empty)
-      routeNameFilter: newRoute.length > 0 ? newRoute : null,
-      companyNameFilter: newCompany.length > 0 ? newCompany : null,
-      statusFilter: newStatus.length > 0 ? newStatus : null,
-      formNameFilter: newForm.length > 0 ? newForm : null,
-      classFilter: newClass.length > 0 ? newClass : null,
-      scheduleFilter: newSchedule.length > 0 ? newSchedule : null,
-      atcFilter: newATC.length > 0 ? newATC : null,
+      routeFilter: newRoutes.length > 0 ? newRoutes : null,
+      formFilter: newForms.length > 0 ? newForms : null,
     }
 
     // Validate primary search before saving
     if (!hasValidPrimarySearch(criteria)) {
-      return
-    }
-
-    // If DIN is provided and valid, skip API validation (exact match)
-    if (dinTerm.length >= MIN_DIN_LENGTH) {
-      finalizeWatchlist(criteria)
       return
     }
 
@@ -377,27 +325,12 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
 
   // Build criteria object to check validation
   const currentCriteria: WatchlistCriteriaLive = {
-    din: newDIN.trim() || null,
     searchTerm: newSearchTerm.trim() || null,
     ingredientName: newIngredient.trim() || null,
-    routeNameFilter: newRoute.length > 0 ? newRoute : null,
-    companyNameFilter: newCompany.length > 0 ? newCompany : null,
-    statusFilter: newStatus.length > 0 ? newStatus : null,
-    formNameFilter: newForm.length > 0 ? newForm : null,
-    classFilter: newClass.length > 0 ? newClass : null,
-    scheduleFilter: newSchedule.length > 0 ? newSchedule : null,
-    atcFilter: newATC.length > 0 ? newATC : null,
+    routeFilter: newRoutes.length > 0 ? newRoutes : null,
+    formFilter: newForms.length > 0 ? newForms : null,
   }
   const hasValidSearch = hasValidPrimarySearch(currentCriteria)
-
-  // Check if any filters are set
-  const hasFiltersSet = newRoute.length > 0 ||
-    newCompany.length > 0 ||
-    newStatus.length > 0 ||
-    newForm.length > 0 ||
-    newClass.length > 0 ||
-    newSchedule.length > 0 ||
-    newATC.length > 0
 
   if (!isLoaded) {
     return (
@@ -656,84 +589,24 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                 />
               </div>
 
-              {/* Filters Section (Collapsible) */}
-              <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Filters
-                    {hasFiltersSet && (
-                      <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">
-                        (active)
-                      </span>
-                    )}
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-neutral-400 transition-transform ${
-                      showFilters ? 'rotate-180' : ''
-                    }`}
+              {/* Optional Route/Form Filters Section */}
+              <div className="space-y-3 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Narrow by Route or Form <span className="text-neutral-400 dark:text-neutral-500">(optional)</span>
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <RouteAutocomplete
+                    value={newRoutes}
+                    onChange={setNewRoutes}
+                    label="Route"
                   />
-                </button>
-
-                {showFilters && (
-                  <div className="p-4 space-y-3 border-t border-neutral-200 dark:border-neutral-700 animate-in slide-in-from-top-2 fade-in duration-150">
-                    {/* Row 1: Route & Company */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <RouteAutocomplete
-                        value={newRoute}
-                        onChange={setNewRoute}
-                      />
-
-                      <CompanyAutocomplete
-                        value={newCompany}
-                        onChange={setNewCompany}
-                      />
-                    </div>
-
-                    {/* Row 2: Status & Form */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <StatusSelect
-                        value={newStatus}
-                        onChange={setNewStatus}
-                      />
-
-                      <FormAutocomplete
-                        value={newForm}
-                        onChange={setNewForm}
-                        label="Dosage Form"
-                      />
-                    </div>
-
-                    {/* Row 3: Class & Schedule */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <ClassAutocomplete
-                        value={newClass}
-                        onChange={setNewClass}
-                      />
-
-                      <ScheduleAutocomplete
-                        value={newSchedule}
-                        onChange={setNewSchedule}
-                      />
-                    </div>
-
-                    {/* Row 4: ATC Code & DIN */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <ATCAutocomplete
-                        value={newATC}
-                        onChange={setNewATC}
-                      />
-
-                      <DINInput
-                        value={newDIN}
-                        onChange={setNewDIN}
-                      />
-                    </div>
-                  </div>
-                )}
+                  <FormAutocomplete
+                    value={newForms}
+                    onChange={setNewForms}
+                    label="Dosage Form"
+                  />
+                </div>
               </div>
             </div>
 

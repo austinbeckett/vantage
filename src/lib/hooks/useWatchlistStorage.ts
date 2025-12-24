@@ -9,61 +9,100 @@ import { useState, useEffect, useCallback } from 'react'
 // Types
 // -----------------------------------------------------------------------------
 
+/**
+ * Primary search criteria for watchlist notifications
+ * These define WHAT to track across all data sources (DPD, NOC, GSUR)
+ */
 export interface WatchlistCriteriaLive {
-  // PRIMARY SEARCH CRITERIA (at least one required)
   /** Product name search term (uses Health Canada API brandname parameter) */
   searchTerm: string | null
   /** Ingredient name search term (uses Health Canada API ingredientname parameter) */
   ingredientName: string | null
-
-  // FILTERS (all optional)
-  /** Drug Identification Number - 8-digit unique identifier (optional filter) */
-  din: string | null
-  /** Filter results by route of administration (exact match, OR logic) */
-  routeNameFilter: string[] | null
-  /** Filter results by company/manufacturer name (partial match, OR logic) */
-  companyNameFilter: string[] | null
-  /** Filter results by status codes (exact match, OR logic) */
-  statusFilter: number[] | null
-  /** Filter results by pharmaceutical/dosage form (exact match, OR logic) */
-  formNameFilter: string[] | null
-  /** Filter results by drug class (partial match, OR logic) */
-  classFilter: string[] | null
-  /** Filter results by schedule (exact match, OR logic) */
-  scheduleFilter: string[] | null
-  /** Filter results by ATC code (prefix match, OR logic) */
-  atcFilter: string[] | null
+  /** Filter by route of administration - applies to DPD and NOC (notification scope) */
+  routeFilter: string[] | null
+  /** Filter by dosage form - applies to DPD and NOC (notification scope) */
+  formFilter: string[] | null
 }
 
 /**
- * Migrate old single-value criteria to new array format
- * Handles backward compatibility for existing watchlists
+ * View-only filters for the DPD tab
+ * These are for narrowing results display, NOT for notification scope
+ * Stored separately per watchlist and applied client-side
  */
-function migrateCriteria(criteria: any): WatchlistCriteriaLive {
-  const toStringArray = (val: any): string[] | null => {
-    if (val === null || val === undefined || val === '') return null
-    if (Array.isArray(val)) return val.length > 0 ? val : null
-    return [val]
-  }
-  const toNumberArray = (val: any): number[] | null => {
-    if (val === null || val === undefined) return null
-    if (Array.isArray(val)) return val.length > 0 ? val : null
-    return [val]
+export interface DPDViewFilters {
+  /** Filter results by status codes (exact match, OR logic). Defaults to [1, 2] (Approved, Marketed) */
+  statusFilter: number[] | null
+}
+
+/**
+ * Default status filter: shows only Approved (1) and Marketed (2) products
+ * This filters out Cancelled and Post Market products by default
+ */
+export const DEFAULT_DPD_STATUS_FILTER: number[] = [1, 2]
+
+/**
+ * Helper functions for array conversion
+ */
+const toStringArray = (val: any): string[] | null => {
+  if (val === null || val === undefined || val === '') return null
+  if (Array.isArray(val)) return val.length > 0 ? val : null
+  return [val]
+}
+
+const toNumberArray = (val: any): number[] | null => {
+  if (val === null || val === undefined) return null
+  if (Array.isArray(val)) return val.length > 0 ? val : null
+  return [val]
+}
+
+/**
+ * Check if status filter is set in a DPDViewFilters object
+ */
+function hasStatusFilter(filters: DPDViewFilters): boolean {
+  return !!(filters.statusFilter?.length)
+}
+
+/**
+ * Migrate old criteria format to new simplified criteria + separate DPD view filters
+ * Handles backward compatibility for existing watchlists
+ *
+ * Migration strategy:
+ * - Route/form move from dpdViewFilters to criteria (notification scope)
+ * - Only statusFilter remains in dpdViewFilters (view-only)
+ * - Other filters (din, company, class, schedule, atc) are discarded
+ * - Status defaults to [1, 2] (Approved, Marketed) if not set
+ */
+function migrateWatchlist(wl: any): { criteria: WatchlistCriteriaLive; dpdViewFilters: DPDViewFilters | undefined } {
+  const criteria = wl.criteria || {}
+  const existingDpdFilters = wl.dpdViewFilters || {}
+
+  // Migrate route/form from old dpdViewFilters to criteria (notification scope)
+  const routeFilter = toStringArray(
+    criteria.routeFilter || existingDpdFilters.routeNameFilter || criteria.routeNameFilter
+  )
+  const formFilter = toStringArray(
+    criteria.formFilter || existingDpdFilters.formNameFilter || criteria.formNameFilter
+  )
+
+  // Status stays in dpdViewFilters (view-only), defaults to Approved + Marketed
+  const statusFilter = toNumberArray(
+    existingDpdFilters.statusFilter || criteria.statusFilter
+  ) ?? DEFAULT_DPD_STATUS_FILTER
+
+  // Build simplified DPD view filters (status only)
+  const dpdViewFilters: DPDViewFilters = {
+    statusFilter,
   }
 
+  // Return new criteria with route/form as notification-scope filters
   return {
-    // Primary search (unchanged)
-    din: criteria.din || null,
-    searchTerm: criteria.searchTerm || null,
-    ingredientName: criteria.ingredientName || null,
-    // Filters (migrate to arrays)
-    routeNameFilter: toStringArray(criteria.routeNameFilter),
-    companyNameFilter: toStringArray(criteria.companyNameFilter),
-    statusFilter: toNumberArray(criteria.statusFilter),
-    formNameFilter: toStringArray(criteria.formNameFilter),
-    classFilter: toStringArray(criteria.classFilter),
-    scheduleFilter: toStringArray(criteria.scheduleFilter),
-    atcFilter: toStringArray(criteria.atcFilter),
+    criteria: {
+      searchTerm: criteria.searchTerm || null,
+      ingredientName: criteria.ingredientName || null,
+      routeFilter,
+      formFilter,
+    },
+    dpdViewFilters: hasStatusFilter(dpdViewFilters) ? dpdViewFilters : undefined,
   }
 }
 
@@ -99,6 +138,25 @@ export function getSearchType(criteria: WatchlistCriteriaLive): 'brand' | 'ingre
   return 'none'
 }
 
+/** Seen entries tracking for "new" badge functionality */
+export interface SeenEntries {
+  /** DIN values from DPD */
+  dpd: string[]
+  /** NOC numbers from Notice of Compliance */
+  noc: number[]
+  /** Composite keys from GSUR: ingredient-company-yearMonth */
+  gsur: string[]
+}
+
+/** Cached counts for quick display on watchlist cards */
+export interface CachedCounts {
+  dpd: number
+  noc: number
+  gsur: number
+  newSinceLastView: number
+  lastUpdated: string
+}
+
 export interface WatchlistLive {
   id: string
   name: string
@@ -109,6 +167,14 @@ export interface WatchlistLive {
   lastUpdated: string
   /** Indicates AI is currently generating the name and description */
   isGeneratingMetadata?: boolean
+  /** Timestamp when the watchlist was last viewed (for "new" badge tracking) */
+  lastViewedAt: string | null
+  /** IDs of entries that have been seen (for tracking new vs. viewed) */
+  seenEntries: SeenEntries
+  /** Cached counts from last fetch (for card display without refetching) */
+  cachedCounts?: CachedCounts
+  /** View-only filters for the DPD tab (persisted per watchlist) */
+  dpdViewFilters?: DPDViewFilters
 }
 
 // -----------------------------------------------------------------------------
@@ -132,11 +198,19 @@ export function useWatchlistStorage() {
       if (stored) {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
-          // Migrate each watchlist's criteria to new array format
-          const migrated = parsed.map((wl: any) => ({
-            ...wl,
-            criteria: migrateCriteria(wl.criteria),
-          }))
+          // Migrate each watchlist to new format (simplified criteria + separate DPD view filters)
+          const migrated = parsed.map((wl: any) => {
+            const { criteria, dpdViewFilters } = migrateWatchlist(wl)
+            return {
+              ...wl,
+              criteria,
+              dpdViewFilters: dpdViewFilters ?? wl.dpdViewFilters,
+              // Add new tracking fields with defaults if missing
+              lastViewedAt: wl.lastViewedAt ?? null,
+              seenEntries: wl.seenEntries ?? { dpd: [], noc: [], gsur: [] },
+              cachedCounts: wl.cachedCounts ?? undefined,
+            }
+          })
           setWatchlists(migrated)
         }
       }
@@ -174,6 +248,12 @@ export function useWatchlistStorage() {
       createdAt: now,
       lastUpdated: now,
       isGeneratingMetadata,
+      // Initialize tracking fields
+      lastViewedAt: null,
+      seenEntries: { dpd: [], noc: [], gsur: [] },
+      cachedCounts: undefined,
+      // Default DPD view filter: show only Approved + Marketed products
+      dpdViewFilters: { statusFilter: DEFAULT_DPD_STATUS_FILTER },
     }
 
     setWatchlists(prev => [newWatchlist, ...prev])
@@ -216,6 +296,47 @@ export function useWatchlistStorage() {
     return watchlists.some(wl => wl.id === id)
   }, [watchlists])
 
+  // Mark a watchlist as viewed and update seen entries
+  const markAsViewed = useCallback((
+    id: string,
+    currentEntries: SeenEntries
+  ) => {
+    setWatchlists(prev => prev.map(wl =>
+      wl.id === id
+        ? {
+            ...wl,
+            lastViewedAt: new Date().toISOString(),
+            seenEntries: currentEntries,
+            lastUpdated: new Date().toISOString(),
+          }
+        : wl
+    ))
+  }, [])
+
+  // Update cached counts for a watchlist (used for card display)
+  const updateCachedCounts = useCallback((
+    id: string,
+    counts: CachedCounts
+  ) => {
+    setWatchlists(prev => prev.map(wl =>
+      wl.id === id
+        ? { ...wl, cachedCounts: counts }
+        : wl
+    ))
+  }, [])
+
+  // Update DPD view filters for a watchlist (used for filtering in DPD tab)
+  const updateDPDViewFilters = useCallback((
+    id: string,
+    filters: DPDViewFilters | null
+  ) => {
+    setWatchlists(prev => prev.map(wl =>
+      wl.id === id
+        ? { ...wl, dpdViewFilters: filters || undefined, lastUpdated: new Date().toISOString() }
+        : wl
+    ))
+  }, [])
+
   return {
     watchlists,
     isLoaded,
@@ -225,5 +346,8 @@ export function useWatchlistStorage() {
     toggleNotifications,
     getWatchlist,
     watchlistExists,
+    markAsViewed,
+    updateCachedCounts,
+    updateDPDViewFilters,
   }
 }

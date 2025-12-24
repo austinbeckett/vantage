@@ -40,6 +40,8 @@ export interface UnifiedSearchFilters {
   routeNames?: string[]
   formNames?: string[]
   companyNames?: string[]
+  classNames?: string[]
+  scheduleNames?: string[]
   atcPrefix?: string
 
   // Pagination - use SEARCH_LIMITS constants
@@ -81,6 +83,8 @@ export async function unifiedSearch(
     routeNames = [],
     formNames = [],
     companyNames = [],
+    classNames = [],
+    scheduleNames = [],
     limit = SEARCH_LIMITS.DEFAULT,
   } = filters
 
@@ -115,7 +119,7 @@ export async function unifiedSearch(
   // Search DPD
   if (sources.includes('DPD')) {
     searchPromises.push(
-      searchDPD(query, { searchType, statusCodes, routeNames, formNames, companyNames, limit })
+      searchDPD(query, { searchType, statusCodes, routeNames, formNames, companyNames, classNames, scheduleNames, limit })
         .then(products => {
           results.products = products
           results.totalProducts = products.length
@@ -173,6 +177,8 @@ interface DPDSearchOptions {
   routeNames?: string[]
   formNames?: string[]
   companyNames?: string[]
+  classNames?: string[]
+  scheduleNames?: string[]
   limit?: number
 }
 
@@ -299,6 +305,22 @@ async function searchDPD(
     const lowerCompanies = options.companyNames.map(c => c.toLowerCase())
     results = results.filter(p =>
       lowerCompanies.some(c => p.companyName.toLowerCase().includes(c))
+    )
+  }
+
+  // Apply class filter (partial match on className)
+  if (options.classNames && options.classNames.length > 0) {
+    const lowerClasses = options.classNames.map(c => c.toLowerCase())
+    results = results.filter(p =>
+      lowerClasses.some(c => p.className.toLowerCase().includes(c))
+    )
+  }
+
+  // Apply schedule filter (exact match on schedules array)
+  if (options.scheduleNames && options.scheduleNames.length > 0) {
+    const lowerSchedules = options.scheduleNames.map(s => s.toLowerCase())
+    results = results.filter(p =>
+      p.schedules.some(s => lowerSchedules.includes(s.toLowerCase()))
     )
   }
 

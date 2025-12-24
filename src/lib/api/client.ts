@@ -173,8 +173,10 @@ export async function fetchWithRetry<T>(
 
       const data = await response.json()
 
-      // Cache successful response
-      setCachedResponse(url, data)
+      // Cache successful response (unless explicitly skipped)
+      if (!skipCache) {
+        setCachedResponse(url, data)
+      }
 
       return data as T
     } catch (error) {

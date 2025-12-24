@@ -63,6 +63,7 @@ export const SCRAPER_API = {
   ENDPOINTS: {
     GSUR: '/scrape-gsur',
     SUR: '/scrape-sur',
+    NOC_SEARCH: '/search-noc',
   },
 } as const
 

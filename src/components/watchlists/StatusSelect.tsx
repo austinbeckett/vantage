@@ -235,12 +235,7 @@ export function StatusSelect({
                       {isSelected && <Check className="w-3 h-3" />}
                     </div>
                     <Activity className="w-3.5 h-3.5 text-mint-500 shrink-0" />
-                    <div>
-                      <span className="font-medium">{status.name}</span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
-                        ({status.code})
-                      </span>
-                    </div>
+                    <span className="font-medium">{status.name}</span>
                   </button>
                 )
               })}
@@ -279,12 +274,7 @@ export function StatusSelect({
                       {isSelected && <Check className="w-3 h-3" />}
                     </div>
                     <Activity className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <div>
-                      <span>{status.name}</span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
-                        ({status.code})
-                      </span>
-                    </div>
+                    <span>{status.name}</span>
                   </button>
                 )
               })}

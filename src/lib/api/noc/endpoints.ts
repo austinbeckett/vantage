@@ -2,110 +2,179 @@
 // NOC (Notice of Compliance) API Endpoints
 // =============================================================================
 // Documentation: https://health-products.canada.ca/api/documentation/noc-documentation-en.html
+//
+// Note: The NOC API doesn't support search by ingredient name.
+// To search, we fetch all data and filter client-side.
 
 import { fetchWithRetry, buildUrl } from '../client'
 import { NOC_API } from '../constants'
 import type {
   NOCMainResponse,
+  NOCIngredientResponse,
   NOCDrugProductResponse,
-  NOCMedicinalIngredientResponse,
   NOCDosageFormResponse,
   NOCRouteResponse,
-  NOCVetSpeciesResponse,
-} from '../../../types/health-canada-api'
+} from './types'
 
 // -----------------------------------------------------------------------------
-// Notice of Compliance Main Endpoint
+// Fetch All Data (for search/filtering)
 // -----------------------------------------------------------------------------
 
 /**
- * Fetch main NOC data by NOC number
+ * Fetch all NOC main records
+ * Returns all Notice of Compliance entries with manufacturer, dates, status, etc.
+ * Note: skipCache=true because this data is cached in-memory in search.ts
  */
-export async function fetchNOCMain(
-  nocNumber: number
-): Promise<NOCMainResponse[]> {
+export async function fetchAllNOCMain(): Promise<NOCMainResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.NOTICE_OF_COMPLIANCE_MAIN, {
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCMainResponse[]>(url, {
+    timeout: 60000, // 60 seconds - large dataset
+    retries: 2,
+    skipCache: true, // Too large for localStorage, uses in-memory cache instead
+  })
+}
+
+/**
+ * Fetch all medicinal ingredients
+ * Returns all ingredients with their NOC numbers for cross-referencing
+ * Note: skipCache=true because this data is cached in-memory in search.ts
+ */
+export async function fetchAllMedicinalIngredients(): Promise<NOCIngredientResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.MEDICINAL_INGREDIENT, {
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCIngredientResponse[]>(url, {
+    timeout: 60000, // 60 seconds - large dataset
+    retries: 2,
+    skipCache: true, // Too large for localStorage, uses in-memory cache instead
+  })
+}
+
+/**
+ * Fetch all NOC drug products (brand names and DINs)
+ * Returns all brand names associated with NOC numbers
+ * Note: skipCache=true because this data is cached in-memory in search.ts
+ */
+export async function fetchAllNOCDrugProducts(): Promise<NOCDrugProductResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.DRUG_PRODUCT, {
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCDrugProductResponse[]>(url, {
+    timeout: 60000, // 60 seconds - large dataset
+    retries: 2,
+    skipCache: true, // Too large for localStorage, uses in-memory cache instead
+  })
+}
+
+/**
+ * Fetch all NOC routes
+ * Returns all routes for cross-referencing with NOC numbers
+ * Note: skipCache=true because this data is cached in-memory in search.ts
+ */
+export async function fetchAllNOCRoutes(): Promise<NOCRouteResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.ROUTE, {
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCRouteResponse[]>(url, {
+    timeout: 60000, // 60 seconds - large dataset
+    retries: 2,
+    skipCache: true, // Too large for localStorage, uses in-memory cache instead
+  })
+}
+
+/**
+ * Fetch all NOC dosage forms
+ * Returns all dosage forms for cross-referencing with NOC numbers
+ * Note: skipCache=true because this data is cached in-memory in search.ts
+ */
+export async function fetchAllNOCDosageForms(): Promise<NOCDosageFormResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.DOSAGE_FORM, {
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCDosageFormResponse[]>(url, {
+    timeout: 60000, // 60 seconds - large dataset
+    retries: 2,
+    skipCache: true, // Too large for localStorage, uses in-memory cache instead
+  })
+}
+
+// -----------------------------------------------------------------------------
+// Fetch by NOC Number (for individual lookups)
+// -----------------------------------------------------------------------------
+
+/**
+ * Fetch NOC main record by NOC number
+ */
+export async function fetchNOCMainByNumber(nocNumber: number): Promise<NOCMainResponse[]> {
   const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.NOTICE_OF_COMPLIANCE_MAIN, {
     id: nocNumber,
+    lang: 'en',
+    type: 'json',
   })
   return fetchWithRetry<NOCMainResponse[]>(url)
 }
 
-// -----------------------------------------------------------------------------
-// Drug Product Endpoint
-// -----------------------------------------------------------------------------
+/**
+ * Fetch medicinal ingredients by NOC number
+ */
+export async function fetchIngredientsByNOCNumber(nocNumber: number): Promise<NOCIngredientResponse[]> {
+  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.MEDICINAL_INGREDIENT, {
+    id: nocNumber,
+    lang: 'en',
+    type: 'json',
+  })
+  return fetchWithRetry<NOCIngredientResponse[]>(url)
+}
 
 /**
- * Fetch drug products associated with an NOC
+ * Fetch drug products by NOC number
  */
-export async function fetchNOCDrugProducts(
-  nocNumber: number
-): Promise<NOCDrugProductResponse[]> {
+export async function fetchDrugProductsByNOCNumber(nocNumber: number): Promise<NOCDrugProductResponse[]> {
   const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.DRUG_PRODUCT, {
     id: nocNumber,
+    lang: 'en',
+    type: 'json',
   })
   return fetchWithRetry<NOCDrugProductResponse[]>(url)
 }
 
-// -----------------------------------------------------------------------------
-// Medicinal Ingredient Endpoint
-// -----------------------------------------------------------------------------
-
 /**
- * Fetch medicinal ingredients for an NOC
+ * Fetch dosage forms by NOC number
  */
-export async function fetchNOCMedicinalIngredients(
-  nocNumber: number
-): Promise<NOCMedicinalIngredientResponse[]> {
-  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.MEDICINAL_INGREDIENT, {
-    id: nocNumber,
-  })
-  return fetchWithRetry<NOCMedicinalIngredientResponse[]>(url)
-}
-
-// -----------------------------------------------------------------------------
-// Dosage Form Endpoint
-// -----------------------------------------------------------------------------
-
-/**
- * Fetch dosage forms for an NOC
- */
-export async function fetchNOCDosageForms(
-  nocNumber: number
-): Promise<NOCDosageFormResponse[]> {
+export async function fetchDosageFormsByNOCNumber(nocNumber: number): Promise<NOCDosageFormResponse[]> {
   const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.DOSAGE_FORM, {
     id: nocNumber,
+    lang: 'en',
+    type: 'json',
   })
   return fetchWithRetry<NOCDosageFormResponse[]>(url)
 }
 
-// -----------------------------------------------------------------------------
-// Route of Administration Endpoint
-// -----------------------------------------------------------------------------
-
 /**
- * Fetch routes of administration for an NOC
+ * Fetch routes by NOC number
  */
-export async function fetchNOCRoutes(
-  nocNumber: number
-): Promise<NOCRouteResponse[]> {
+export async function fetchRoutesByNOCNumber(nocNumber: number): Promise<NOCRouteResponse[]> {
   const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.ROUTE, {
     id: nocNumber,
+    lang: 'en',
+    type: 'json',
   })
   return fetchWithRetry<NOCRouteResponse[]>(url)
 }
 
 // -----------------------------------------------------------------------------
-// Veterinary Species Endpoint
+// Aliases for backwards compatibility with queries.ts
 // -----------------------------------------------------------------------------
 
-/**
- * Fetch veterinary species for an NOC
- */
-export async function fetchNOCVetSpecies(
-  nocNumber: number
-): Promise<NOCVetSpeciesResponse[]> {
-  const url = buildUrl(NOC_API.BASE_URL, NOC_API.ENDPOINTS.VET_SPECIES, {
-    id: nocNumber,
-  })
-  return fetchWithRetry<NOCVetSpeciesResponse[]>(url)
-}
+export const fetchNOCMain = fetchNOCMainByNumber
+export const fetchNOCDrugProducts = fetchDrugProductsByNOCNumber
+export const fetchNOCMedicinalIngredients = fetchIngredientsByNOCNumber
+export const fetchNOCDosageForms = fetchDosageFormsByNOCNumber
+export const fetchNOCRoutes = fetchRoutesByNOCNumber

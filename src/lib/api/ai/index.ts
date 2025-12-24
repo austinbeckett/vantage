@@ -64,6 +64,7 @@ export async function generateWatchlistMetadata(
 
 /**
  * Build the prompt for Gemini based on watchlist criteria
+ * Includes primary search criteria (brand/ingredient) and route/form filters
  */
 function buildPrompt(criteria: WatchlistCriteriaLive): string {
   const parts: string[] = []
@@ -76,40 +77,27 @@ function buildPrompt(criteria: WatchlistCriteriaLive): string {
     const brands = criteria.searchTerm.split('|').map(b => b.trim()).join(', ')
     parts.push(`Brand/product name(s): ${brands}`)
   }
-  if (criteria.din) {
-    parts.push(`DIN (Drug Identification Number): ${criteria.din}`)
+  if (criteria.routeFilter?.length) {
+    parts.push(`Route filter(s): ${criteria.routeFilter.join(', ')}`)
   }
-  if (criteria.routeNameFilter?.length) {
-    parts.push(`Routes of administration: ${criteria.routeNameFilter.join(', ')}`)
-  }
-  if (criteria.companyNameFilter?.length) {
-    parts.push(`Manufacturer/company: ${criteria.companyNameFilter.join(', ')}`)
-  }
-  if (criteria.formNameFilter?.length) {
-    parts.push(`Dosage forms: ${criteria.formNameFilter.join(', ')}`)
-  }
-  if (criteria.classFilter?.length) {
-    parts.push(`Drug classes: ${criteria.classFilter.join(', ')}`)
-  }
-  if (criteria.scheduleFilter?.length) {
-    parts.push(`Schedules: ${criteria.scheduleFilter.join(', ')}`)
-  }
-  if (criteria.atcFilter?.length) {
-    parts.push(`ATC codes: ${criteria.atcFilter.join(', ')}`)
+  if (criteria.formFilter?.length) {
+    parts.push(`Dosage form filter(s): ${criteria.formFilter.join(', ')}`)
   }
 
-  return `You are helping a pharmaceutical regulatory professional create a watchlist for monitoring Health Canada drug products.
+  return `Generate a watchlist name and description for a pharmaceutical regulatory monitoring tool.
 
-Based on these search criteria:
+Criteria:
 ${parts.join('\n')}
 
-Generate a concise, professional name (maximum 50 characters) and description (maximum 150 characters) for this watchlist.
+Rules:
+- Name: max 40 characters, do NOT include "Health Canada" (it's implied by the app)
+- Description: must be a complete sentence, max 120 characters, do NOT truncate mid-word
+- Be concise and professional
+- Focus on what drug products are being tracked
+- IMPORTANT: If route or dosage form filters are specified, incorporate them into the name and/or description (e.g., "IV Ceftriaxone Products" or "Monitoring oral formulations of...")
 
-The name should be brief but descriptive of what's being monitored.
-The description should explain what types of products this watchlist tracks.
-
-Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
-{"name": "Your Name Here", "description": "Your description here"}`
+Respond ONLY with valid JSON (no markdown):
+{"name": "Example Name", "description": "Complete sentence here."}`
 }
 
 /**
@@ -118,7 +106,7 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
 function parseGeneratedMetadata(text: string, criteria: WatchlistCriteriaLive): GeneratedWatchlistMetadata {
   try {
     // Try to extract JSON from response (handle potential markdown code blocks)
-    let jsonText = text
+    let jsonText = text.trim()
 
     // Remove markdown code blocks if present
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
@@ -126,17 +114,30 @@ function parseGeneratedMetadata(text: string, criteria: WatchlistCriteriaLive): 
       jsonText = codeBlockMatch[1].trim()
     }
 
-    // Find JSON object in text
-    const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0])
+    // Find the first complete JSON object using bracket matching
+    const startIdx = jsonText.indexOf('{')
+    if (startIdx !== -1) {
+      let braceCount = 0
+      let endIdx = startIdx
+
+      for (let i = startIdx; i < jsonText.length; i++) {
+        if (jsonText[i] === '{') braceCount++
+        if (jsonText[i] === '}') braceCount--
+        if (braceCount === 0) {
+          endIdx = i
+          break
+        }
+      }
+
+      const jsonString = jsonText.substring(startIdx, endIdx + 1)
+      const parsed = JSON.parse(jsonString)
       return {
         name: (parsed.name || '').substring(0, 50) || generateFallbackName(criteria),
         description: (parsed.description || '').substring(0, 150) || generateFallbackDescription(criteria)
       }
     }
   } catch (e) {
-    console.error('Failed to parse Gemini response:', e)
+    console.error('Failed to parse Gemini response:', e, '\nRaw text:', text)
   }
   return generateFallbackMetadata(criteria)
 }
@@ -152,40 +153,73 @@ function generateFallbackMetadata(criteria: WatchlistCriteriaLive): GeneratedWat
 }
 
 function generateFallbackName(criteria: WatchlistCriteriaLive): string {
+  const parts: string[] = []
+
+  // Add route prefix (e.g., "IV" for intravenous)
+  if (criteria.routeFilter?.length) {
+    const route = criteria.routeFilter[0]
+    // Common abbreviations
+    if (route.toLowerCase().includes('intravenous')) {
+      parts.push('IV')
+    } else if (route.toLowerCase().includes('oral')) {
+      parts.push('Oral')
+    } else if (route.toLowerCase().includes('topical')) {
+      parts.push('Topical')
+    } else {
+      parts.push(route.split(' ')[0]) // First word of route
+    }
+  }
+
+  // Add main search term
   if (criteria.ingredientName) {
     const firstIngredient = criteria.ingredientName.split('|')[0].trim()
-    // Capitalize first letter
     const capitalized = firstIngredient.charAt(0).toUpperCase() + firstIngredient.slice(1).toLowerCase()
-    return `${capitalized} Watchlist`.substring(0, 50)
-  }
-  if (criteria.searchTerm) {
+    parts.push(capitalized)
+  } else if (criteria.searchTerm) {
     const firstBrand = criteria.searchTerm.split('|')[0].trim()
-    return `${firstBrand} Watchlist`.substring(0, 50)
+    parts.push(firstBrand)
   }
-  if (criteria.din) {
-    return `DIN ${criteria.din} Watchlist`
+
+  // Add form suffix if specified and no route
+  if (criteria.formFilter?.length && !criteria.routeFilter?.length) {
+    const form = criteria.formFilter[0]
+    parts.push(form.split(' ')[0]) // First word of form
   }
+
+  if (parts.length > 0) {
+    return `${parts.join(' ')} Watchlist`.substring(0, 50)
+  }
+
   return `Watchlist ${new Date().toISOString().split('T')[0]}`
 }
 
 function generateFallbackDescription(criteria: WatchlistCriteriaLive): string {
   const parts: string[] = []
 
-  if (criteria.ingredientName) {
-    const ingredients = criteria.ingredientName.split('|').map(i => i.trim())
-    parts.push(ingredients.length > 1 ? `${ingredients[0]} and related ingredients` : ingredients[0])
-  } else if (criteria.searchTerm) {
-    const brands = criteria.searchTerm.split('|').map(b => b.trim())
-    parts.push(brands.length > 1 ? `${brands[0]} and related products` : brands[0])
-  } else if (criteria.din) {
-    parts.push(`DIN ${criteria.din}`)
+  // Add route qualifier
+  if (criteria.routeFilter?.length) {
+    const route = criteria.routeFilter[0].toLowerCase()
+    if (route.includes('intravenous')) {
+      parts.push('intravenous')
+    } else if (route.includes('oral')) {
+      parts.push('oral')
+    } else {
+      parts.push(route)
+    }
   }
 
-  if (criteria.routeNameFilter?.length) {
-    parts.push(`via ${criteria.routeNameFilter[0]}`)
+  // Add form qualifier
+  if (criteria.formFilter?.length) {
+    parts.push(criteria.formFilter[0].toLowerCase())
   }
-  if (criteria.companyNameFilter?.length) {
-    parts.push(`from ${criteria.companyNameFilter[0]}`)
+
+  // Add main product identifier
+  if (criteria.ingredientName) {
+    const ingredients = criteria.ingredientName.split('|').map(i => i.trim())
+    parts.push(ingredients.length > 1 ? `${ingredients[0]} and related` : ingredients[0])
+  } else if (criteria.searchTerm) {
+    const brands = criteria.searchTerm.split('|').map(b => b.trim())
+    parts.push(brands.length > 1 ? `${brands[0]} and related` : brands[0])
   }
 
   if (parts.length > 0) {

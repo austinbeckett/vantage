@@ -1,7 +1,6 @@
 // =============================================================================
-// NOC (Notice of Compliance) API Module
+// Watchlist API Module
 // =============================================================================
 
-export * from './endpoints'
-export * from './search'
-export type * from './types'
+export * from './fetcher'
+export * from './queries'
