@@ -32,14 +32,14 @@ const eventColors = {
     badge: 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400',
   },
   discontinuation: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-600 dark:text-red-400',
-    badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+    bg: 'bg-error-100 dark:bg-error-900/30',
+    text: 'text-error-600 dark:text-error-400',
+    badge: 'bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400',
   },
   status_change: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
-    badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+    bg: 'bg-azure-100 dark:bg-azure-900/30',
+    text: 'text-azure-600 dark:text-azure-400',
+    badge: 'bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-400',
   },
 }
 

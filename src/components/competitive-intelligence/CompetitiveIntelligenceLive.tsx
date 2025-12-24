@@ -157,14 +157,14 @@ export function CompetitiveIntelligenceLive() {
       </div>
 
       {/* Info Banner */}
-      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+      <div className="p-4 bg-azure-50 dark:bg-azure-900/20 border border-azure-200 dark:border-azure-800 rounded-xl">
         <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <Info className="w-5 h-5 text-azure-600 dark:text-azure-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            <p className="text-sm font-medium text-azure-800 dark:text-azure-200">
               Live Data from GSUR & SUR
             </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            <p className="text-xs text-azure-600 dark:text-azure-400 mt-1">
               This data is derived from Health Canada's Generic Submissions Under Review (GSUR)
               and Submissions Under Review (SUR) databases. Historical trends and market share
               calculations require a backend sync service.
@@ -175,14 +175,14 @@ export function CompetitiveIntelligenceLive() {
 
       {/* Error State */}
       {hasError && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-error-600 dark:text-error-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              <p className="text-sm font-medium text-error-800 dark:text-error-200">
                 Failed to load some data
               </p>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+              <p className="text-xs text-error-600 dark:text-error-400 mt-1">
                 {gsurError ? 'GSUR data unavailable. ' : ''}
                 {surError ? 'SUR data unavailable. ' : ''}
               </p>
@@ -195,8 +195,8 @@ export function CompetitiveIntelligenceLive() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <FileCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-lavender-100 dark:bg-lavender-900/30 flex items-center justify-center">
+              <FileCheck className="w-5 h-5 text-lavender-600 dark:text-lavender-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -211,8 +211,8 @@ export function CompetitiveIntelligenceLive() {
 
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <FileCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-azure-100 dark:bg-azure-900/30 flex items-center justify-center">
+              <FileCheck className="w-5 h-5 text-azure-600 dark:text-azure-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -302,10 +302,10 @@ export function CompetitiveIntelligenceLive() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 ml-7">
-                          <span className="text-xs text-purple-600 dark:text-purple-400">
+                          <span className="text-xs text-lavender-600 dark:text-lavender-400">
                             GSUR: {company.gsurCount}
                           </span>
-                          <span className="text-xs text-blue-600 dark:text-blue-400">
+                          <span className="text-xs text-azure-600 dark:text-azure-400">
                             SUR: {company.surCount}
                           </span>
                         </div>

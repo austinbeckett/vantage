@@ -13,7 +13,7 @@ import { X, Package, Pill, Loader2, AlertCircle, Check } from 'lucide-react'
 interface SearchConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (selectedValue: string) => void
+  onConfirm: (selectedValues: string[]) => void
   searchType: 'brand' | 'ingredient'
   searchTerm: string
   results: string[]
@@ -35,25 +35,46 @@ export function SearchConfirmationModal({
   isLoading = false,
   error = null,
 }: SearchConfirmationModalProps) {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null)
+  const [selectedValues, setSelectedValues] = useState<Set<string>>(new Set())
 
   if (!isOpen) return null
 
   const Icon = searchType === 'brand' ? Package : Pill
-  const title = searchType === 'brand' ? 'Select Product' : 'Select Ingredient'
+  const title = searchType === 'brand' ? 'Select Products' : 'Select Ingredients'
   const subtitle = searchType === 'brand'
     ? `Multiple products match "${searchTerm}"`
     : `Multiple ingredients match "${searchTerm}"`
 
   const handleConfirm = () => {
-    if (selectedValue) {
-      onConfirm(selectedValue)
+    if (selectedValues.size > 0) {
+      onConfirm(Array.from(selectedValues))
     }
   }
 
-  const handleSelect = (value: string) => {
-    setSelectedValue(value)
+  const handleToggle = (value: string) => {
+    setSelectedValues(prev => {
+      const next = new Set(prev)
+      if (next.has(value)) {
+        next.delete(value)
+      } else {
+        next.add(value)
+      }
+      return next
+    })
   }
+
+  const handleSelectAll = () => {
+    if (selectedValues.size === results.length) {
+      // All selected, deselect all
+      setSelectedValues(new Set())
+    } else {
+      // Select all
+      setSelectedValues(new Set(results))
+    }
+  }
+
+  const allSelected = results.length > 0 && selectedValues.size === results.length
+  const someSelected = selectedValues.size > 0 && selectedValues.size < results.length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -94,84 +115,119 @@ export function SearchConfirmationModal({
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-8 text-center">
-              <AlertCircle className="w-6 h-6 text-red-500 mr-2" />
-              <span className="text-red-600 dark:text-red-400">{error}</span>
+              <AlertCircle className="w-6 h-6 text-error-500 mr-2" />
+              <span className="text-error-600 dark:text-error-400">{error}</span>
             </div>
           ) : results.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-center">
-              <AlertCircle className="w-6 h-6 text-amber-500 mr-2" />
+              <AlertCircle className="w-6 h-6 text-tan-500 mr-2" />
               <span className="text-neutral-500 dark:text-neutral-400">
                 No {searchType === 'brand' ? 'products' : 'ingredients'} found for "{searchTerm}"
               </span>
             </div>
           ) : (
             <div className="space-y-2">
-              {results.map((result, idx) => (
+              {/* Select All Button */}
+              {results.length > 1 && (
                 <button
-                  key={`${result}-${idx}`}
                   type="button"
-                  onClick={() => handleSelect(result)}
-                  className={`
-                    w-full px-4 py-3 rounded-xl text-left
-                    flex items-center gap-3
-                    transition-all duration-150
-                    ${selectedValue === result
-                      ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500 ring-2 ring-primary-500/20'
-                      : 'bg-neutral-50 dark:bg-neutral-700/50 border-2 border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                    }
-                  `}
+                  onClick={handleSelectAll}
+                  className="w-full px-4 py-2.5 rounded-lg text-left flex items-center gap-3 bg-neutral-100 dark:bg-neutral-700/70 hover:bg-neutral-200 dark:hover:bg-neutral-600/70 transition-colors mb-3"
                 >
                   <div className={`
-                    w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                    ${selectedValue === result
+                    w-5 h-5 rounded flex items-center justify-center shrink-0
+                    ${allSelected
                       ? 'bg-primary-500 text-white'
-                      : 'bg-neutral-200 dark:bg-neutral-600 text-neutral-500 dark:text-neutral-400'
+                      : someSelected
+                        ? 'bg-primary-500/50 text-white'
+                        : 'bg-neutral-300 dark:bg-neutral-500'
                     }
                   `}>
-                    {selectedValue === result ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Icon className="w-4 h-4" />
-                    )}
+                    {(allSelected || someSelected) && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <span className={`
-                    font-medium truncate
-                    ${selectedValue === result
-                      ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-neutral-700 dark:text-neutral-300'
-                    }
-                  `}>
-                    {result}
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {allSelected ? 'Deselect All' : 'Select All'} ({results.length} {searchType === 'brand' ? 'products' : 'ingredients'})
                   </span>
                 </button>
-              ))}
+              )}
+
+              {/* Results List */}
+              {results.map((result, idx) => {
+                const isSelected = selectedValues.has(result)
+                return (
+                  <button
+                    key={`${result}-${idx}`}
+                    type="button"
+                    onClick={() => handleToggle(result)}
+                    className={`
+                      w-full px-4 py-3 rounded-xl text-left
+                      flex items-center gap-3
+                      transition-all duration-150
+                      ${isSelected
+                        ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500 ring-2 ring-primary-500/20'
+                        : 'bg-neutral-50 dark:bg-neutral-700/50 border-2 border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                      }
+                    `}
+                  >
+                    <div className={`
+                      w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                      ${isSelected
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-neutral-200 dark:bg-neutral-600 text-neutral-500 dark:text-neutral-400'
+                      }
+                    `}>
+                      {isSelected ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className={`
+                      font-medium truncate
+                      ${isSelected
+                        ? 'text-primary-700 dark:text-primary-300'
+                        : 'text-neutral-700 dark:text-neutral-300'
+                      }
+                    `}>
+                      {result}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={!selectedValue || isLoading}
-            className={`
-              px-5 py-2 text-sm font-medium rounded-lg transition-colors
-              ${selectedValue && !isLoading
-                ? 'bg-primary-500 hover:bg-primary-600 text-white'
-                : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-              }
-            `}
-          >
-            Create Watchlist
-          </button>
+        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">
+            {selectedValues.size > 0 && (
+              <span>{selectedValues.size} selected</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={selectedValues.size === 0 || isLoading}
+              className={`
+                px-5 py-2 text-sm font-medium rounded-lg transition-colors
+                ${selectedValues.size > 0 && !isLoading
+                  ? 'bg-primary-500 hover:bg-primary-600 text-white'
+                  : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                }
+              `}
+            >
+              Create Watchlist
+            </button>
+          </div>
         </div>
       </div>
     </div>

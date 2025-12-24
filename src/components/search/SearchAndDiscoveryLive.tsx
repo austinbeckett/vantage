@@ -586,9 +586,9 @@ export function SearchAndDiscoveryLive({
 
       {/* Error state */}
       {isError && (
-        <div className="text-center py-16 bg-white dark:bg-neutral-800 rounded-2xl border border-rose-200 dark:border-rose-900">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-500/10 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-rose-500" />
+        <div className="text-center py-16 bg-white dark:bg-neutral-800 rounded-2xl border border-error-200 dark:border-error-900">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error-500/10 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-error-500" />
           </div>
           <h3 className="text-lg font-medium text-neutral-700 dark:text-neutral-300 mb-1">
             Search failed
@@ -710,7 +710,7 @@ export function SearchAndDiscoveryLive({
           {searchResults.gsurMatches.length > 0 && (
             <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="w-2 h-2 rounded-full bg-lavender-500" />
                 Generic Submissions (GSUR) - {searchResults.gsurMatches.length} matches
               </h3>
               <div className="space-y-2">
@@ -731,7 +731,7 @@ export function SearchAndDiscoveryLive({
           {searchResults.surMatches.length > 0 && (
             <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-sky-500" />
+                <span className="w-2 h-2 rounded-full bg-azure-500" />
                 New Drug Submissions (SUR) - {searchResults.surMatches.length} matches
               </h3>
               <div className="space-y-2">

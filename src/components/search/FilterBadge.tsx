@@ -13,19 +13,19 @@ const typeColors: Record<ActiveFilter['type'], { bg: string; text: string; borde
     border: 'border-primary-500/20 dark:border-primary-400/20'
   },
   manufacturer: {
-    bg: 'bg-secondary-500/10 dark:bg-secondary-400/10',
-    text: 'text-secondary-700 dark:text-secondary-300',
-    border: 'border-secondary-500/20 dark:border-secondary-400/20'
+    bg: 'bg-tan-500/10 dark:bg-tan-400/10',
+    text: 'text-tan-700 dark:text-tan-300',
+    border: 'border-tan-500/20 dark:border-tan-400/20'
   },
   route: {
-    bg: 'bg-sky-500/10 dark:bg-sky-400/10',
-    text: 'text-sky-700 dark:text-sky-300',
-    border: 'border-sky-500/20 dark:border-sky-400/20'
+    bg: 'bg-azure-500/10 dark:bg-azure-400/10',
+    text: 'text-azure-700 dark:text-azure-300',
+    border: 'border-azure-500/20 dark:border-azure-400/20'
   },
   dosageForm: {
-    bg: 'bg-violet-500/10 dark:bg-violet-400/10',
-    text: 'text-violet-700 dark:text-violet-300',
-    border: 'border-violet-500/20 dark:border-violet-400/20'
+    bg: 'bg-lavender-500/10 dark:bg-lavender-400/10',
+    text: 'text-lavender-700 dark:text-lavender-300',
+    border: 'border-lavender-500/20 dark:border-lavender-400/20'
   }
 }
 

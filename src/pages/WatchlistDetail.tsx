@@ -113,7 +113,7 @@ export default function WatchlistDetail() {
             <button className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
               <Pencil className="w-5 h-5" />
             </button>
-            <button className="p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+            <button className="p-2 rounded-lg text-neutral-400 hover:text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors">
               <Trash2 className="w-5 h-5" />
             </button>
           </div>
@@ -130,10 +130,10 @@ export default function WatchlistDetail() {
                   : criteria.type === 'ingredient'
                   ? 'bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300'
                   : criteria.type === 'manufacturer'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                  ? 'bg-tan-100 dark:bg-tan-900/30 text-tan-700 dark:text-tan-300'
                   : criteria.type === 'route'
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                  ? 'bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-300'
+                  : 'bg-lavender-100 dark:bg-lavender-800 text-lavender-600 dark:text-lavender-400'
                 }
               `}
             >

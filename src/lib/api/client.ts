@@ -5,12 +5,16 @@
 // for Health Canada API calls.
 
 import { API_CONFIG } from './constants'
+import { getCachedResponse, setCachedResponse } from './cache'
 
 export interface RequestConfig {
   timeout?: number
   retries?: number
   retryDelay?: number
   headers?: Record<string, string>
+  signal?: AbortSignal
+  /** Skip cache and fetch fresh data */
+  skipCache?: boolean
 }
 
 export interface ApiError extends Error {
@@ -18,12 +22,14 @@ export interface ApiError extends Error {
   statusText?: string
   isTimeout?: boolean
   isNetworkError?: boolean
+  isAborted?: boolean
 }
 
-const defaultConfig: Required<Omit<RequestConfig, 'headers'>> = {
+const defaultConfig: Required<Omit<RequestConfig, 'headers' | 'signal'>> = {
   timeout: API_CONFIG.TIMEOUT,
   retries: API_CONFIG.RETRIES,
   retryDelay: API_CONFIG.RETRY_DELAY,
+  skipCache: false,
 }
 
 /**
@@ -36,6 +42,7 @@ function createApiError(
     statusText?: string
     isTimeout?: boolean
     isNetworkError?: boolean
+    isAborted?: boolean
   }
 ): ApiError {
   const error = new Error(message) as ApiError
@@ -44,6 +51,7 @@ function createApiError(
   error.statusText = options?.statusText
   error.isTimeout = options?.isTimeout ?? false
   error.isNetworkError = options?.isNetworkError ?? false
+  error.isAborted = options?.isAborted ?? false
   return error
 }
 
@@ -68,6 +76,9 @@ function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     const apiError = error as ApiError
 
+    // Never retry aborted requests
+    if (apiError.isAborted) return false
+
     // Retry on timeout
     if (apiError.isTimeout) return true
 
@@ -90,10 +101,15 @@ function isRetryableError(error: unknown): boolean {
 async function fetchWithTimeout(
   url: string,
   timeout: number,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
+  externalSignal?: AbortSignal
 ): Promise<Response> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  // Abort our controller if external signal aborts
+  const abortHandler = () => controller.abort()
+  externalSignal?.addEventListener('abort', abortHandler)
 
   try {
     const response = await fetch(url, {
@@ -106,28 +122,47 @@ async function fetchWithTimeout(
     return response
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      // Check if aborted by external signal first
+      if (externalSignal?.aborted) {
+        throw createApiError('Request aborted', { isAborted: true })
+      }
+      // Otherwise it was our timeout
       throw createApiError(`Request timeout after ${timeout}ms`, { isTimeout: true })
     }
     throw createApiError('Network error', { isNetworkError: true })
   } finally {
     clearTimeout(timeoutId)
+    externalSignal?.removeEventListener('abort', abortHandler)
   }
 }
 
 /**
- * Fetch with retry logic and exponential backoff
+ * Fetch with retry logic, exponential backoff, and caching
  */
 export async function fetchWithRetry<T>(
   url: string,
   config: RequestConfig = {}
 ): Promise<T> {
-  const { timeout, retries, retryDelay, headers } = { ...defaultConfig, ...config }
+  const { timeout, retries, retryDelay, headers, signal, skipCache } = { ...defaultConfig, ...config }
+
+  // Check cache first (unless explicitly skipped)
+  if (!skipCache) {
+    const cached = getCachedResponse<T>(url)
+    if (cached !== null) {
+      return cached
+    }
+  }
 
   let lastError: ApiError | null = null
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetchWithTimeout(url, timeout, headers)
+      // Check if already aborted before attempting
+      if (signal?.aborted) {
+        throw createApiError('Request aborted', { isAborted: true })
+      }
+
+      const response = await fetchWithTimeout(url, timeout, headers, signal)
 
       if (!response.ok) {
         throw createApiError(
@@ -137,6 +172,10 @@ export async function fetchWithRetry<T>(
       }
 
       const data = await response.json()
+
+      // Cache successful response
+      setCachedResponse(url, data)
+
       return data as T
     } catch (error) {
       lastError = error instanceof Error

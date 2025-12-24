@@ -23,22 +23,51 @@ interface DrugProductCardLiveProps {
   onViewHistory?: () => void
 }
 
-const statusStyles: Record<string, { bg: string; text: string; dot: string }> = {
-  active: {
-    bg: 'bg-secondary-500/10 dark:bg-secondary-400/10',
+// Status styles keyed by status code for precise styling
+const statusStylesByCode: Record<number, { bg: string; text: string; dot: string; border: string }> = {
+  1: { // Approved
+    bg: 'bg-mint-100 dark:bg-mint-900/30',
+    text: 'text-mint-700 dark:text-mint-300',
+    dot: 'bg-mint-500',
+    border: 'border border-mint-200 dark:border-mint-700/50',
+  },
+  2: { // Marketed
+    bg: 'bg-secondary-100 dark:bg-secondary-900/30',
     text: 'text-secondary-700 dark:text-secondary-300',
     dot: 'bg-secondary-500',
+    border: 'border border-secondary-200 dark:border-secondary-700/50',
+  },
+}
+
+// Fallback styles by category
+const statusStylesByCategory: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+  active: {
+    bg: 'bg-mint-100 dark:bg-mint-900/30',
+    text: 'text-mint-700 dark:text-mint-300',
+    dot: 'bg-mint-500',
+    border: 'border border-mint-200 dark:border-mint-700/50',
   },
   inactive: {
-    bg: 'bg-neutral-500/10 dark:bg-neutral-400/10',
+    bg: 'bg-neutral-100 dark:bg-neutral-700',
     text: 'text-neutral-600 dark:text-neutral-400',
     dot: 'bg-neutral-400',
+    border: 'border border-neutral-200 dark:border-neutral-600',
   },
   pending: {
-    bg: 'bg-amber-500/10 dark:bg-amber-400/10',
-    text: 'text-amber-700 dark:text-amber-300',
-    dot: 'bg-amber-500',
+    bg: 'bg-tan-100 dark:bg-tan-900/30',
+    text: 'text-tan-700 dark:text-tan-300',
+    dot: 'bg-tan-500',
+    border: 'border border-tan-200 dark:border-tan-700/50',
   },
+}
+
+function getStatusStyle(statusCode: number, statusCategory: string) {
+  // First try to get style by specific status code
+  if (statusStylesByCode[statusCode]) {
+    return statusStylesByCode[statusCode]
+  }
+  // Fall back to category-based styling
+  return statusStylesByCategory[statusCategory] ?? statusStylesByCategory.inactive
 }
 
 function formatDate(dateString: string | null): string {
@@ -74,7 +103,7 @@ export function DrugProductCardLive({
   onAddToWatchlist,
   onViewHistory,
 }: DrugProductCardLiveProps) {
-  const statusStyle = statusStyles[product.statusCategory] ?? statusStyles.inactive
+  const statusStyle = getStatusStyle(product.statusCode, product.statusCategory)
 
   const handleAttributeClick = (
     type: ActiveFilter['type'],
@@ -120,7 +149,7 @@ export function DrugProductCardLive({
 
           {/* Status badge */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
             {product.statusName}
@@ -188,7 +217,7 @@ export function DrugProductCardLive({
                       primaryIngredient.name
                     )
                   }
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-500/10 text-primary-700 dark:text-primary-300 border border-primary-500/20 hover:bg-primary-500/20 hover:border-primary-500/40 transition-all hover:shadow-sm hover:shadow-primary-500/20"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700/50 hover:bg-primary-200 dark:hover:bg-primary-900/50 hover:border-primary-300 dark:hover:border-primary-600 transition-all"
                 >
                   {primaryIngredient.name}
                 </button>
@@ -201,7 +230,7 @@ export function DrugProductCardLive({
                     product.companyName
                   )
                 }
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary-500/10 text-secondary-700 dark:text-secondary-300 border border-secondary-500/20 hover:bg-secondary-500/20 hover:border-secondary-500/40 transition-all hover:shadow-sm hover:shadow-secondary-500/20"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-tan-100 dark:bg-tan-900/30 text-tan-700 dark:text-tan-300 border border-tan-200 dark:border-tan-700/50 hover:bg-tan-200 dark:hover:bg-tan-900/50 hover:border-tan-300 dark:hover:border-tan-600 transition-all"
               >
                 {product.companyName}
               </button>
@@ -211,7 +240,7 @@ export function DrugProductCardLive({
                   onClick={() =>
                     handleAttributeClick('route', route.name, route.name)
                   }
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-500/20 hover:border-sky-500/40 transition-all hover:shadow-sm hover:shadow-sky-500/20"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-300 border border-azure-200 dark:border-azure-700/50 hover:bg-azure-200 dark:hover:bg-azure-900/50 hover:border-azure-300 dark:hover:border-azure-600 transition-all"
                 >
                   {route.name}
                 </button>
@@ -222,7 +251,7 @@ export function DrugProductCardLive({
                   onClick={() =>
                     handleAttributeClick('form', form.name, form.name)
                   }
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all hover:shadow-sm hover:shadow-violet-500/20"
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-lavender-100 dark:bg-lavender-900/30 text-lavender-700 dark:text-lavender-300 border border-lavender-200 dark:border-lavender-700/50 hover:bg-lavender-200 dark:hover:bg-lavender-900/50 hover:border-lavender-300 dark:hover:border-lavender-600 transition-all"
                 >
                   {form.name}
                 </button>

@@ -71,10 +71,12 @@ export const SCRAPER_API = {
  */
 export const API_CONFIG = {
   // Request timeout in milliseconds
-  TIMEOUT: 15000,
+  // Health Canada API can be very slow (up to 60+ seconds for some queries)
+  TIMEOUT: 60000,
 
   // Number of retry attempts for failed requests
-  RETRIES: 3,
+  // Reduced from 3 since slow queries won't benefit from retries
+  RETRIES: 1,
 
   // Base delay for exponential backoff (ms)
   RETRY_DELAY: 1000,

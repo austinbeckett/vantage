@@ -3,7 +3,7 @@
 // =============================================================================
 // Documentation: https://health-products.canada.ca/api/documentation/dpd-documentation-en.html
 
-import { fetchWithRetry, buildUrl } from '../client'
+import { fetchWithRetry, buildUrl, type RequestConfig } from '../client'
 import { DPD_API } from '../constants'
 import type {
   DPDDrugProductResponse,
@@ -50,14 +50,16 @@ export async function fetchDrugProductByDIN(
 /**
  * Search drug products by brand name (partial match)
  * API: /drugproduct/?brandname=X returns products where brand_name contains X
+ * Note: Health Canada API is case-sensitive - brand names are uppercased automatically
  */
 export async function searchDrugProductsByBrandName(
-  brandName: string
+  brandName: string,
+  config?: RequestConfig
 ): Promise<DPDDrugProductResponse[]> {
   const url = buildUrl(DPD_API.BASE_URL, DPD_API.ENDPOINTS.DRUG_PRODUCT, {
-    brandname: brandName,
+    brandname: brandName.toUpperCase(),
   })
-  return fetchWithRetry<DPDDrugProductResponse[]>(url)
+  return fetchWithRetry<DPDDrugProductResponse[]>(url, config)
 }
 
 /**
@@ -92,12 +94,13 @@ export async function fetchActiveIngredients(
  * Search active ingredients by name (partial match)
  */
 export async function searchActiveIngredientsByName(
-  ingredientName: string
+  ingredientName: string,
+  config?: RequestConfig
 ): Promise<DPDActiveIngredientResponse[]> {
   const url = buildUrl(DPD_API.BASE_URL, DPD_API.ENDPOINTS.ACTIVE_INGREDIENT, {
     ingredientname: ingredientName,
   })
-  return fetchWithRetry<DPDActiveIngredientResponse[]>(url)
+  return fetchWithRetry<DPDActiveIngredientResponse[]>(url, config)
 }
 
 // -----------------------------------------------------------------------------

@@ -205,8 +205,8 @@ export function Watchlists({
 
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-azure-100 dark:bg-azure-900/30 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-azure-600 dark:text-azure-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">

@@ -10,64 +10,90 @@ import { useState, useEffect, useCallback } from 'react'
 // -----------------------------------------------------------------------------
 
 export interface WatchlistCriteriaLive {
-  // PRIMARY SEARCH CRITERIA (API-supported, at least one required)
-  /** Drug Identification Number - 8-digit unique identifier */
-  din: string | null
+  // PRIMARY SEARCH CRITERIA (at least one required)
   /** Product name search term (uses Health Canada API brandname parameter) */
   searchTerm: string | null
   /** Ingredient name search term (uses Health Canada API ingredientname parameter) */
   ingredientName: string | null
 
-  // PRIMARY FILTERS (client-side, always visible)
-  /** Filter results by route of administration (exact match) */
-  routeNameFilter: string | null
-  /** Filter results by company/manufacturer name (partial match) */
-  companyNameFilter: string | null
+  // FILTERS (all optional)
+  /** Drug Identification Number - 8-digit unique identifier (optional filter) */
+  din: string | null
+  /** Filter results by route of administration (exact match, OR logic) */
+  routeNameFilter: string[] | null
+  /** Filter results by company/manufacturer name (partial match, OR logic) */
+  companyNameFilter: string[] | null
+  /** Filter results by status codes (exact match, OR logic) */
+  statusFilter: number[] | null
+  /** Filter results by pharmaceutical/dosage form (exact match, OR logic) */
+  formNameFilter: string[] | null
+  /** Filter results by drug class (partial match, OR logic) */
+  classFilter: string[] | null
+  /** Filter results by schedule (exact match, OR logic) */
+  scheduleFilter: string[] | null
+  /** Filter results by ATC code (prefix match, OR logic) */
+  atcFilter: string[] | null
+}
 
-  // ADVANCED FILTERS (client-side, in accordion)
-  /** Filter results by status code (exact match) */
-  statusFilter: number | null
-  /** Filter results by pharmaceutical/dosage form (exact match) */
-  formNameFilter: string | null
-  /** Filter results by drug class (partial match) */
-  classFilter: string | null
-  /** Filter results by schedule (exact match) */
-  scheduleFilter: string | null
-  /** Filter results by ATC code (prefix match) */
-  atcFilter: string | null
+/**
+ * Migrate old single-value criteria to new array format
+ * Handles backward compatibility for existing watchlists
+ */
+function migrateCriteria(criteria: any): WatchlistCriteriaLive {
+  const toStringArray = (val: any): string[] | null => {
+    if (val === null || val === undefined || val === '') return null
+    if (Array.isArray(val)) return val.length > 0 ? val : null
+    return [val]
+  }
+  const toNumberArray = (val: any): number[] | null => {
+    if (val === null || val === undefined) return null
+    if (Array.isArray(val)) return val.length > 0 ? val : null
+    return [val]
+  }
+
+  return {
+    // Primary search (unchanged)
+    din: criteria.din || null,
+    searchTerm: criteria.searchTerm || null,
+    ingredientName: criteria.ingredientName || null,
+    // Filters (migrate to arrays)
+    routeNameFilter: toStringArray(criteria.routeNameFilter),
+    companyNameFilter: toStringArray(criteria.companyNameFilter),
+    statusFilter: toNumberArray(criteria.statusFilter),
+    formNameFilter: toStringArray(criteria.formNameFilter),
+    classFilter: toStringArray(criteria.classFilter),
+    scheduleFilter: toStringArray(criteria.scheduleFilter),
+    atcFilter: toStringArray(criteria.atcFilter),
+  }
 }
 
 /** Minimum characters required for text-based API search */
-export const MIN_SEARCH_LENGTH = 5
+export const MIN_SEARCH_LENGTH = 3
 
 /** Minimum characters required for DIN search (DINs are 8 digits) */
 export const MIN_DIN_LENGTH = 8
 
 /** Check if criteria has a valid primary search term */
 export function hasValidPrimarySearch(criteria: WatchlistCriteriaLive): boolean {
-  const din = criteria.din?.trim() || ''
   const searchTerm = criteria.searchTerm?.trim() || ''
   const ingredientName = criteria.ingredientName?.trim() || ''
 
-  // DIN requires 8 characters, text searches require 5
-  return din.length >= MIN_DIN_LENGTH ||
-         searchTerm.length >= MIN_SEARCH_LENGTH ||
+  // Primary search requires either product name or ingredient with minimum characters
+  return searchTerm.length >= MIN_SEARCH_LENGTH ||
          ingredientName.length >= MIN_SEARCH_LENGTH
 }
 
 /** Get the primary search query from criteria */
 export function getPrimarySearchQuery(criteria: WatchlistCriteriaLive): string {
-  // DIN takes priority, then product name, then ingredient
-  return criteria.din?.trim() || criteria.searchTerm?.trim() || criteria.ingredientName?.trim() || ''
+  // Product name takes priority, then ingredient
+  return criteria.searchTerm?.trim() || criteria.ingredientName?.trim() || ''
 }
 
 /** Determine the search type based on criteria */
-export function getSearchType(criteria: WatchlistCriteriaLive): 'din' | 'brand' | 'ingredient' | 'none' {
-  const din = criteria.din?.trim() || ''
+export function getSearchType(criteria: WatchlistCriteriaLive): 'brand' | 'ingredient' | 'none' {
   const searchTerm = criteria.searchTerm?.trim() || ''
   const ingredientName = criteria.ingredientName?.trim() || ''
 
-  if (din.length >= MIN_DIN_LENGTH) return 'din'
   if (searchTerm.length >= MIN_SEARCH_LENGTH) return 'brand'
   if (ingredientName.length >= MIN_SEARCH_LENGTH) return 'ingredient'
   return 'none'
@@ -97,14 +123,19 @@ export function useWatchlistStorage() {
   const [watchlists, setWatchlists] = useState<WatchlistLive[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load from local storage on mount
+  // Load from local storage on mount (with migration for backward compatibility)
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
-          setWatchlists(parsed)
+          // Migrate each watchlist's criteria to new array format
+          const migrated = parsed.map((wl: any) => ({
+            ...wl,
+            criteria: migrateCriteria(wl.criteria),
+          }))
+          setWatchlists(migrated)
         }
       }
     } catch (error) {

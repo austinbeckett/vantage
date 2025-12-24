@@ -87,9 +87,9 @@ export function Dashboard({
   // Get database color
   const getDatabaseColor = (db: string) => {
     switch (db) {
-      case 'DPD': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      case 'DPD': return 'bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-300'
       case 'NOC': return 'bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300'
-      case 'GSUR': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+      case 'GSUR': return 'bg-lavender-100 dark:bg-lavender-900/30 text-lavender-700 dark:text-lavender-300'
       default: return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
     }
   }
@@ -157,8 +157,8 @@ export function Dashboard({
         {/* New This Week */}
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-azure-100 dark:bg-azure-900/30 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-azure-600 dark:text-azure-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -174,8 +174,8 @@ export function Dashboard({
         {/* Products Tracked */}
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Database className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-lavender-100 dark:bg-lavender-900/30 flex items-center justify-center">
+              <Database className="w-5 h-5 text-lavender-600 dark:text-lavender-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -191,17 +191,17 @@ export function Dashboard({
 
       {/* Database Activity Mini Stats */}
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <span className="text-xs font-medium text-blue-700 dark:text-blue-300">DPD</span>
-          <span className="text-xs text-blue-600 dark:text-blue-400">{stats.recentDpdUpdates} updates</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-azure-50 dark:bg-azure-900/20 rounded-lg">
+          <span className="text-xs font-medium text-azure-700 dark:text-azure-300">DPD</span>
+          <span className="text-xs text-azure-600 dark:text-azure-400">{stats.recentDpdUpdates} updates</span>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg">
           <span className="text-xs font-medium text-secondary-700 dark:text-secondary-300">NOC</span>
           <span className="text-xs text-secondary-600 dark:text-secondary-400">{stats.recentNocUpdates} updates</span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-          <span className="text-xs font-medium text-purple-700 dark:text-purple-300">GSUR</span>
-          <span className="text-xs text-purple-600 dark:text-purple-400">{stats.recentGsurUpdates} updates</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-lavender-50 dark:bg-lavender-900/20 rounded-lg">
+          <span className="text-xs font-medium text-lavender-700 dark:text-lavender-300">GSUR</span>
+          <span className="text-xs text-lavender-600 dark:text-lavender-400">{stats.recentGsurUpdates} updates</span>
         </div>
       </div>
 
@@ -528,10 +528,10 @@ export function Dashboard({
                   <div className={`
                     w-10 h-10 rounded-xl flex items-center justify-center shrink-0
                     ${date.type === 'deadline'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      ? 'bg-error-100 dark:bg-error-900/30 text-error-600 dark:text-error-400'
                       : date.type === 'submission'
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'bg-azure-100 dark:bg-azure-900/30 text-azure-600 dark:text-azure-400'
                     }
                   `}>
                     <Calendar className="w-5 h-5" />

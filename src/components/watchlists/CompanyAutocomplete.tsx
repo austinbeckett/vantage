@@ -1,20 +1,21 @@
 // =============================================================================
-// Company Autocomplete
+// Company Autocomplete (Multi-Select)
 // =============================================================================
-// Typeahead component for selecting companies from Health Canada reference data
+// Multi-select component for selecting companies from Health Canada reference data
 // Fetches all companies on first focus and filters client-side
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Search, Loader2, X, Building2 } from 'lucide-react'
+import { Search, Loader2, X, Building2, Check } from 'lucide-react'
 import { useAllCompanies } from '../../lib/api/dpd/queries'
+import { Portal } from '../ui/Portal'
 
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
 interface CompanyAutocompleteProps {
-  value: string
-  onChange: (value: string) => void
+  value: string[]
+  onChange: (value: string[]) => void
   placeholder?: string
   label?: string
 }
@@ -26,37 +27,48 @@ interface CompanyAutocompleteProps {
 export function CompanyAutocomplete({
   value,
   onChange,
-  placeholder = 'e.g., APOTEX INC, PFIZER',
-  label = 'Company/Manufacturer',
+  placeholder = 'Any company',
+  label = 'Company',
 }: CompanyAutocompleteProps) {
-  const [inputValue, setInputValue] = useState(value)
+  const [inputValue, setInputValue] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Track selected values as a Set for efficient lookups
+  const selectedSet = useMemo(() => new Set(value), [value])
 
   // Fetch all companies ONLY after user interacts (lazy load to avoid blocking other requests)
   const { data: companies, isLoading, isFetching } = useAllCompanies(hasInteracted)
 
   // Filter companies based on input (client-side)
   const suggestions = useMemo(() => {
-    if (!companies || inputValue.trim().length < 2) return []
+    if (!companies) return []
 
-    const query = inputValue.toLowerCase().trim()
-
-    // Get unique company names and filter
+    // Get unique company names
     const uniqueCompanies = new Map<string, string>()
     companies.forEach(company => {
       const name = company.company_name
       const lowerName = name.toLowerCase()
-      if (lowerName.includes(query) && !uniqueCompanies.has(lowerName)) {
+      if (!uniqueCompanies.has(lowerName)) {
         uniqueCompanies.set(lowerName, name)
       }
     })
 
-    // Sort by relevance (starts with query first, then alphabetically)
-    return Array.from(uniqueCompanies.values())
+    const allCompanies = Array.from(uniqueCompanies.values())
+
+    // Require at least 2 characters to show suggestions (there are ~2000+ companies)
+    if (inputValue.trim().length < 2) {
+      return []
+    }
+
+    // Filter by input
+    const query = inputValue.toLowerCase().trim()
+    return allCompanies
+      .filter(company => company.toLowerCase().includes(query))
       .sort((a, b) => {
         const aLower = a.toLowerCase()
         const bLower = b.toLowerCase()
@@ -70,15 +82,13 @@ export function CompanyAutocomplete({
       .slice(0, 50) // Limit to 50 suggestions for performance
   }, [companies, inputValue])
 
-  // Sync external value changes
-  useEffect(() => {
-    setInputValue(value)
-  }, [value])
-
-  // Handle click outside
+  // Handle click outside (check both container and portal dropdown)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const clickedInsideContainer = containerRef.current?.contains(target)
+      const clickedInsideDropdown = dropdownRef.current?.contains(target)
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setIsOpen(false)
       }
     }
@@ -86,56 +96,49 @@ export function CompanyAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Show dropdown when we have suggestions and input is focused
+  // Calculate dropdown position when opening
   useEffect(() => {
-    if (isFocused && suggestions.length > 0) {
-      setIsOpen(true)
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      })
     }
-  }, [suggestions, isFocused])
+  }, [isOpen])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    setInputValue(newValue)
-    onChange(newValue)
-
-    // Open dropdown if we have enough characters
-    if (newValue.trim().length >= 2) {
+    setInputValue(e.target.value)
+    if (e.target.value.trim().length >= 2) {
       setIsOpen(true)
-    } else {
-      setIsOpen(false)
     }
   }
 
-  const handleSelect = (companyName: string) => {
-    setInputValue(companyName)
-    onChange(companyName)
-    setIsOpen(false)
-    inputRef.current?.blur()
+  const handleToggle = (companyName: string) => {
+    const newSelected = new Set(selectedSet)
+    if (newSelected.has(companyName)) {
+      newSelected.delete(companyName)
+    } else {
+      newSelected.add(companyName)
+    }
+    onChange(Array.from(newSelected))
   }
 
-  const handleClear = () => {
+  const handleRemove = (companyName: string) => {
+    onChange(value.filter(v => v !== companyName))
+  }
+
+  const handleClearAll = () => {
+    onChange([])
     setInputValue('')
-    onChange('')
-    setIsOpen(false)
-    inputRef.current?.focus()
   }
 
   const handleFocus = () => {
-    setIsFocused(true)
-    setHasInteracted(true) // Trigger lazy load on first focus
-    if (inputValue.trim().length >= 2 && suggestions.length > 0) {
+    setHasInteracted(true)
+    if (inputValue.trim().length >= 2) {
       setIsOpen(true)
     }
-  }
-
-  const handleBlur = () => {
-    setIsFocused(false)
-    // Delay closing to allow click on suggestion
-    setTimeout(() => {
-      if (!containerRef.current?.contains(document.activeElement)) {
-        setIsOpen(false)
-      }
-    }, 150)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,6 +151,7 @@ export function CompanyAutocomplete({
   const showLoading = isLoading || isFetching
   const showSuggestions = isOpen && suggestions.length > 0
   const showNoResults = isOpen && !showLoading && inputValue.trim().length >= 2 && suggestions.length === 0 && companies
+  const showHint = isOpen && !showLoading && inputValue.trim().length < 2 && inputValue.trim().length > 0 && companies
 
   return (
     <div ref={containerRef} className="relative">
@@ -164,11 +168,10 @@ export function CompanyAutocomplete({
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
-          onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={value.length > 0 ? 'Add...' : placeholder}
           className={`
-            w-full px-4 py-2.5 pr-20
+            w-full px-3 py-2 pr-16 text-sm
             bg-white dark:bg-neutral-800
             border rounded-lg
             text-neutral-900 dark:text-neutral-100
@@ -182,11 +185,12 @@ export function CompanyAutocomplete({
           {showLoading && (
             <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
           )}
-          {inputValue && !showLoading && (
+          {value.length > 0 && !showLoading && (
             <button
               type="button"
-              onClick={handleClear}
+              onClick={handleClearAll}
               className="p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+              title="Clear all"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -195,46 +199,124 @@ export function CompanyAutocomplete({
         </div>
       </div>
 
-      {/* Suggestions Dropdown */}
-      {showSuggestions && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150">
-          <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              {suggestions.length}{suggestions.length === 50 ? '+' : ''} compan{suggestions.length !== 1 ? 'ies' : 'y'} found
-            </span>
-          </div>
-          <div className="max-h-48 overflow-y-auto">
-            {suggestions.map((company, idx) => (
+      {/* Selected Chips */}
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {value.map(item => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-tan-100 dark:bg-tan-900/30 text-tan-700 dark:text-tan-300 border border-tan-200 dark:border-tan-700/50"
+            >
+              <Building2 className="w-3 h-3" />
+              {item}
               <button
-                key={`${company}-${idx}`}
                 type="button"
-                onClick={() => handleSelect(company)}
-                className={`
-                  w-full px-4 py-2.5 text-left text-sm
-                  flex items-center gap-2
-                  hover:bg-primary-50 dark:hover:bg-primary-900/20
-                  transition-colors
-                  ${inputValue.toLowerCase() === company.toLowerCase()
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                    : 'text-neutral-700 dark:text-neutral-300'
-                  }
-                `}
+                onClick={() => handleRemove(item)}
+                className="ml-0.5 hover:text-tan-900 dark:hover:text-tan-100"
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">{company}</span>
+                <X className="w-3 h-3" />
               </button>
-            ))}
-          </div>
+            </span>
+          ))}
         </div>
       )}
 
-      {/* No Results */}
-      {showNoResults && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden">
-          <div className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 text-center">
-            No companies found for "{inputValue}"
+      {/* Suggestions Dropdown (Portal) */}
+      {showSuggestions && (
+        <Portal>
+          <div
+            ref={dropdownRef}
+            className="fixed z-[100] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width
+            }}
+          >
+            <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-between">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {suggestions.length}{suggestions.length === 50 ? '+' : ''} compan{suggestions.length !== 1 ? 'ies' : 'y'} found
+              </span>
+              {value.length > 0 && (
+                <span className="text-xs text-tan-600 dark:text-tan-400">
+                  {value.length} selected
+                </span>
+              )}
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {suggestions.map((company, idx) => {
+                const isSelected = selectedSet.has(company)
+                return (
+                  <button
+                    key={`${company}-${idx}`}
+                    type="button"
+                    onClick={() => handleToggle(company)}
+                    className={`
+                      w-full px-4 py-2.5 text-left text-sm
+                      flex items-center gap-2
+                      hover:bg-primary-50 dark:hover:bg-primary-900/20
+                      transition-colors
+                      ${isSelected
+                        ? 'bg-tan-50 dark:bg-tan-900/20 text-tan-700 dark:text-tan-300'
+                        : 'text-neutral-700 dark:text-neutral-300'
+                      }
+                    `}
+                  >
+                    <div className={`
+                      w-4 h-4 rounded border flex items-center justify-center shrink-0
+                      ${isSelected
+                        ? 'bg-tan-500 border-tan-500 text-white'
+                        : 'border-neutral-300 dark:border-neutral-600'
+                      }
+                    `}>
+                      {isSelected && <Check className="w-3 h-3" />}
+                    </div>
+                    <Building2 className="w-3.5 h-3.5 text-tan-500 shrink-0" />
+                    <span className="truncate">{company}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </Portal>
+      )}
+
+      {/* Hint for minimum characters (Portal) */}
+      {showHint && (
+        <Portal>
+          <div
+            ref={dropdownRef}
+            className="fixed z-[100] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width
+            }}
+          >
+            <div className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 text-center">
+              Type at least 2 characters to search
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* No Results (Portal) */}
+      {showNoResults && (
+        <Portal>
+          <div
+            ref={dropdownRef}
+            className="fixed z-[100] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width
+            }}
+          >
+            <div className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 text-center">
+              No companies found for "{inputValue}"
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   )

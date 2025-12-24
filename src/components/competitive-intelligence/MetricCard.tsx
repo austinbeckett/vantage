@@ -64,7 +64,7 @@ export function MetricCard({
                 isPositive
                   ? 'text-secondary-600 dark:text-secondary-400'
                   : isNegative
-                    ? 'text-red-600 dark:text-red-400'
+                    ? 'text-error-600 dark:text-error-400'
                     : 'text-neutral-500 dark:text-neutral-400'
               }`}
             >

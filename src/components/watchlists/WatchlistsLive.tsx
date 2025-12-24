@@ -3,8 +3,8 @@
 // =============================================================================
 // Manages user watchlists with criteria that query the live Health Canada API
 
-import { useState } from 'react'
-import { Plus, Search, Eye, Bell, X, Loader2, Info, ChevronDown } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Search, Eye, Bell, X, Loader2, ChevronDown } from 'lucide-react'
 import {
   useWatchlistStorage,
   hasValidPrimarySearch,
@@ -26,6 +26,7 @@ import { ScheduleAutocomplete } from './ScheduleAutocomplete'
 import { ATCAutocomplete } from './ATCAutocomplete'
 import { SearchConfirmationModal } from './SearchConfirmationModal'
 import { searchDrugProductsByBrandName, searchActiveIngredientsByName } from '../../lib/api/dpd/endpoints'
+import type { ApiError } from '../../lib/api/client'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -52,7 +53,6 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingWatchlist, setEditingWatchlist] = useState<WatchlistLive | null>(null)
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   // Form state - Primary search
   const [newName, setNewName] = useState('')
@@ -61,16 +61,15 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const [newSearchTerm, setNewSearchTerm] = useState('')
   const [newIngredient, setNewIngredient] = useState('')
 
-  // Form state - Primary filters
-  const [newRoute, setNewRoute] = useState('')
-  const [newCompany, setNewCompany] = useState('')
-
-  // Form state - Advanced filters
-  const [newStatus, setNewStatus] = useState<number | null>(null)
-  const [newForm, setNewForm] = useState('')
-  const [newClass, setNewClass] = useState('')
-  const [newSchedule, setNewSchedule] = useState('')
-  const [newATC, setNewATC] = useState('')
+  // Form state - Filters (all support multi-select)
+  const [newRoute, setNewRoute] = useState<string[]>([])
+  const [newCompany, setNewCompany] = useState<string[]>([])
+  const [newStatus, setNewStatus] = useState<number[]>([])
+  const [newForm, setNewForm] = useState<string[]>([])
+  const [newClass, setNewClass] = useState<string[]>([])
+  const [newSchedule, setNewSchedule] = useState<string[]>([])
+  const [newATC, setNewATC] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
 
   // Search confirmation modal state
   const [isSearching, setIsSearching] = useState(false)
@@ -80,6 +79,16 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   const [confirmationSearchTerm, setConfirmationSearchTerm] = useState('')
   const [confirmationResults, setConfirmationResults] = useState<string[]>([])
   const [pendingCriteria, setPendingCriteria] = useState<WatchlistCriteriaLive | null>(null)
+
+  // Abort controller for cancelling in-flight API requests
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
 
   const filteredWatchlists = watchlists.filter(wl => {
     if (!searchQuery) return true
@@ -99,14 +108,14 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     setNewDIN('')
     setNewSearchTerm('')
     setNewIngredient('')
-    setNewRoute('')
-    setNewCompany('')
-    setNewStatus(null)
-    setNewForm('')
-    setNewClass('')
-    setNewSchedule('')
-    setNewATC('')
-    setShowAdvancedFilters(false)
+    setNewRoute([])
+    setNewCompany([])
+    setNewStatus([])
+    setNewForm([])
+    setNewClass([])
+    setNewSchedule([])
+    setNewATC([])
+    setShowFilters(false)
     // Reset confirmation modal state
     setIsSearching(false)
     setSearchError(null)
@@ -128,22 +137,23 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     setNewDIN(watchlist.criteria.din || '')
     setNewSearchTerm(watchlist.criteria.searchTerm || '')
     setNewIngredient(watchlist.criteria.ingredientName || '')
-    // Primary filters
-    setNewRoute(watchlist.criteria.routeNameFilter || '')
-    setNewCompany(watchlist.criteria.companyNameFilter || '')
-    // Advanced filters
-    setNewStatus(watchlist.criteria.statusFilter ?? null)
-    setNewForm(watchlist.criteria.formNameFilter || '')
-    setNewClass(watchlist.criteria.classFilter || '')
-    setNewSchedule(watchlist.criteria.scheduleFilter || '')
-    setNewATC(watchlist.criteria.atcFilter || '')
-    // Show advanced filters if any are set
-    const hasAdvanced = watchlist.criteria.statusFilter != null ||
-                       watchlist.criteria.formNameFilter ||
-                       watchlist.criteria.classFilter ||
-                       watchlist.criteria.scheduleFilter ||
-                       watchlist.criteria.atcFilter
-    setShowAdvancedFilters(!!hasAdvanced)
+    // Filters (all arrays)
+    setNewRoute(watchlist.criteria.routeNameFilter || [])
+    setNewCompany(watchlist.criteria.companyNameFilter || [])
+    setNewStatus(watchlist.criteria.statusFilter || [])
+    setNewForm(watchlist.criteria.formNameFilter || [])
+    setNewClass(watchlist.criteria.classFilter || [])
+    setNewSchedule(watchlist.criteria.scheduleFilter || [])
+    setNewATC(watchlist.criteria.atcFilter || [])
+    // Show filters if any are set
+    const hasFilters = (watchlist.criteria.routeNameFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.companyNameFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.statusFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.formNameFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.classFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.scheduleFilter?.length ?? 0) > 0 ||
+                       (watchlist.criteria.atcFilter?.length ?? 0) > 0
+    setShowFilters(hasFilters)
   }
 
   const handleToggleNotifications = (id: string) => {
@@ -157,12 +167,19 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
   }
 
   const closeModal = () => {
+    // Cancel any in-flight request when closing modal
+    abortControllerRef.current?.abort()
     setShowCreateModal(false)
     setEditingWatchlist(null)
     resetForm()
   }
 
   const handleSave = async () => {
+    // Cancel any previous in-flight request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
     const searchTerm = newSearchTerm.trim()
     const ingredientTerm = newIngredient.trim()
     const dinTerm = newDIN.trim()
@@ -172,15 +189,14 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
       din: dinTerm || null,
       searchTerm: searchTerm || null,
       ingredientName: ingredientTerm || null,
-      // Primary filters
-      routeNameFilter: newRoute.trim() || null,
-      companyNameFilter: newCompany.trim() || null,
-      // Advanced filters
-      statusFilter: newStatus,
-      formNameFilter: newForm.trim() || null,
-      classFilter: newClass.trim() || null,
-      scheduleFilter: newSchedule.trim() || null,
-      atcFilter: newATC.trim() || null,
+      // Filters (arrays, only include if non-empty)
+      routeNameFilter: newRoute.length > 0 ? newRoute : null,
+      companyNameFilter: newCompany.length > 0 ? newCompany : null,
+      statusFilter: newStatus.length > 0 ? newStatus : null,
+      formNameFilter: newForm.length > 0 ? newForm : null,
+      classFilter: newClass.length > 0 ? newClass : null,
+      scheduleFilter: newSchedule.length > 0 ? newSchedule : null,
+      atcFilter: newATC.length > 0 ? newATC : null,
     }
 
     // Validate primary search before saving
@@ -200,7 +216,10 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
       setSearchError(null)
 
       try {
-        const results = await searchDrugProductsByBrandName(searchTerm)
+        const results = await searchDrugProductsByBrandName(searchTerm, { signal })
+
+        // Check if request was aborted
+        if (signal.aborted) return
 
         // Extract unique brand names
         const uniqueBrands = [...new Set(results.map(p => p.brand_name).filter(Boolean))]
@@ -227,6 +246,10 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
         setIsSearching(false)
         return
       } catch (error) {
+        // Ignore abort errors - user cancelled or component unmounted
+        if (error instanceof Error && (error as ApiError).isAborted) {
+          return
+        }
         console.error('Brand search failed:', error)
         setSearchError('Failed to search products. Please try again.')
         setIsSearching(false)
@@ -240,7 +263,10 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
       setSearchError(null)
 
       try {
-        const results = await searchActiveIngredientsByName(ingredientTerm)
+        const results = await searchActiveIngredientsByName(ingredientTerm, { signal })
+
+        // Check if request was aborted
+        if (signal.aborted) return
         // Extract unique ingredient names
         const uniqueIngredients = [...new Set(results.map(i => i.ingredient_name).filter(Boolean))]
 
@@ -266,6 +292,10 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
         setIsSearching(false)
         return
       } catch (error) {
+        // Ignore abort errors - user cancelled or component unmounted
+        if (error instanceof Error && (error as ApiError).isAborted) {
+          return
+        }
         console.error('Ingredient search failed:', error)
         setSearchError('Failed to search ingredients. Please try again.')
         setIsSearching(false)
@@ -288,14 +318,16 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     closeModal()
   }
 
-  const handleConfirmSelection = (selectedValue: string) => {
-    if (!pendingCriteria) return
+  const handleConfirmSelection = (selectedValues: string[]) => {
+    if (!pendingCriteria || selectedValues.length === 0) return
 
     const finalCriteria = { ...pendingCriteria }
+    // Join multiple selections with "|" delimiter
+    const joinedValue = selectedValues.join('|')
     if (confirmationSearchType === 'brand') {
-      finalCriteria.searchTerm = selectedValue
+      finalCriteria.searchTerm = joinedValue
     } else {
-      finalCriteria.ingredientName = selectedValue
+      finalCriteria.ingredientName = joinedValue
     }
 
     setConfirmationModalOpen(false)
@@ -315,22 +347,24 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
     din: newDIN.trim() || null,
     searchTerm: newSearchTerm.trim() || null,
     ingredientName: newIngredient.trim() || null,
-    routeNameFilter: newRoute.trim() || null,
-    companyNameFilter: newCompany.trim() || null,
-    statusFilter: newStatus,
-    formNameFilter: newForm.trim() || null,
-    classFilter: newClass.trim() || null,
-    scheduleFilter: newSchedule.trim() || null,
-    atcFilter: newATC.trim() || null,
+    routeNameFilter: newRoute.length > 0 ? newRoute : null,
+    companyNameFilter: newCompany.length > 0 ? newCompany : null,
+    statusFilter: newStatus.length > 0 ? newStatus : null,
+    formNameFilter: newForm.length > 0 ? newForm : null,
+    classFilter: newClass.length > 0 ? newClass : null,
+    scheduleFilter: newSchedule.length > 0 ? newSchedule : null,
+    atcFilter: newATC.length > 0 ? newATC : null,
   }
   const hasValidSearch = hasValidPrimarySearch(currentCriteria)
 
-  // Check if any advanced filters are set
-  const hasAdvancedFiltersSet = newStatus !== null ||
-    newForm.trim() ||
-    newClass.trim() ||
-    newSchedule.trim() ||
-    newATC.trim()
+  // Check if any filters are set
+  const hasFiltersSet = newRoute.length > 0 ||
+    newCompany.length > 0 ||
+    newStatus.length > 0 ||
+    newForm.length > 0 ||
+    newClass.length > 0 ||
+    newSchedule.length > 0 ||
+    newATC.length > 0
 
   if (!isLoaded) {
     return (
@@ -390,8 +424,8 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
 
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-azure-100 dark:bg-azure-900/30 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-azure-600 dark:text-azure-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -564,79 +598,36 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
               </div>
 
               {/* Primary Search Section */}
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
-                <div className="flex items-start gap-2 mb-3">
-                  <Info className="w-4 h-4 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
-                  <div>
-                    <label className="block text-sm font-medium text-primary-800 dark:text-primary-200">
-                      Primary Search (Required)
-                    </label>
-                    <p className="text-xs text-primary-600 dark:text-primary-400 mt-0.5">
-                      At least one: DIN ({MIN_DIN_LENGTH} digits), Product Name ({MIN_SEARCH_LENGTH}+ chars), or Ingredient ({MIN_SEARCH_LENGTH}+ chars)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {/* DIN Input */}
-                  <DINInput
-                    value={newDIN}
-                    onChange={setNewDIN}
-                  />
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700" />
-                    <span className="text-xs text-neutral-400 uppercase">or</span>
-                    <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700" />
-                  </div>
-
-                  {/* Product Name and Ingredient side by side */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <BrandAutocomplete
-                      value={newSearchTerm}
-                      onChange={setNewSearchTerm}
-                    />
-
-                    <IngredientAutocomplete
-                      value={newIngredient}
-                      onChange={setNewIngredient}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary Filters Section */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Filters
-                </label>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-                  Narrow down your search results
+              <div className="space-y-3">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Choose a molecule to monitor
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <RouteAutocomplete
-                    value={newRoute}
-                    onChange={setNewRoute}
-                  />
+                {/* Active Ingredient */}
+                <IngredientAutocomplete
+                  value={newIngredient}
+                  onChange={setNewIngredient}
+                  label="Active Ingredient"
+                />
 
-                  <CompanyAutocomplete
-                    value={newCompany}
-                    onChange={setNewCompany}
-                  />
-                </div>
+                {/* Product Name */}
+                <BrandAutocomplete
+                  value={newSearchTerm}
+                  onChange={setNewSearchTerm}
+                  label="Product Name"
+                />
               </div>
 
-              {/* Advanced Filters Accordion */}
+              {/* Filters Section (Collapsible) */}
               <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
                 <button
                   type="button"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  onClick={() => setShowFilters(!showFilters)}
                   className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Advanced Filters
-                    {hasAdvancedFiltersSet && (
+                    Filters
+                    {hasFiltersSet && (
                       <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">
                         (active)
                       </span>
@@ -644,13 +635,27 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                   </span>
                   <ChevronDown
                     className={`w-4 h-4 text-neutral-400 transition-transform ${
-                      showAdvancedFilters ? 'rotate-180' : ''
+                      showFilters ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
-                {showAdvancedFilters && (
+                {showFilters && (
                   <div className="p-4 space-y-3 border-t border-neutral-200 dark:border-neutral-700 animate-in slide-in-from-top-2 fade-in duration-150">
+                    {/* Row 1: Route & Company */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <RouteAutocomplete
+                        value={newRoute}
+                        onChange={setNewRoute}
+                      />
+
+                      <CompanyAutocomplete
+                        value={newCompany}
+                        onChange={setNewCompany}
+                      />
+                    </div>
+
+                    {/* Row 2: Status & Form */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <StatusSelect
                         value={newStatus}
@@ -664,6 +669,7 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                       />
                     </div>
 
+                    {/* Row 3: Class & Schedule */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <ClassAutocomplete
                         value={newClass}
@@ -676,10 +682,18 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
                       />
                     </div>
 
-                    <ATCAutocomplete
-                      value={newATC}
-                      onChange={setNewATC}
-                    />
+                    {/* Row 4: ATC Code & DIN */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <ATCAutocomplete
+                        value={newATC}
+                        onChange={setNewATC}
+                      />
+
+                      <DINInput
+                        value={newDIN}
+                        onChange={setNewDIN}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -687,14 +701,19 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
 
             <div className="flex items-center justify-between gap-3 p-5 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50">
               <div className="flex-1">
-                {searchError && (
-                  <p className="text-xs text-red-600 dark:text-red-400">
+                {isSearching && (
+                  <p className="text-xs text-azure-600 dark:text-azure-400">
+                    Searching Health Canada database... First-time searches may take up to 60 seconds.
+                  </p>
+                )}
+                {searchError && !isSearching && (
+                  <p className="text-xs text-error-600 dark:text-error-400">
                     {searchError}
                   </p>
                 )}
-                {!hasValidSearch && !searchError && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Enter DIN ({MIN_DIN_LENGTH} digits), Product Name, or Ingredient ({MIN_SEARCH_LENGTH}+ chars)
+                {!hasValidSearch && !searchError && !isSearching && (
+                  <p className="text-xs text-tan-600 dark:text-tan-400">
+                    Enter a Product Name or Ingredient ({MIN_SEARCH_LENGTH}+ characters)
                   </p>
                 )}
               </div>

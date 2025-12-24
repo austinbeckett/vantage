@@ -108,7 +108,7 @@ export function Settings({
             <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-700">
               <button
                 onClick={onLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Log Out</span>

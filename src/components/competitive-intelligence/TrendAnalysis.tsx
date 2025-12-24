@@ -413,7 +413,7 @@ function StatCard({ label, value, trend, subtitle, color }: StatCardProps) {
             className={`flex items-center gap-0.5 text-sm font-medium ${
               trend >= 0
                 ? 'text-secondary-600 dark:text-secondary-400'
-                : 'text-red-600 dark:text-red-400'
+                : 'text-error-600 dark:text-error-400'
             }`}
           >
             {trend >= 0 ? (
@@ -447,7 +447,7 @@ function InsightCard({ title, description, trend }: InsightCardProps) {
         {trend === 'up' ? (
           <TrendingUp className="w-4 h-4 text-secondary-500" />
         ) : (
-          <TrendingDown className="w-4 h-4 text-red-500" />
+          <TrendingDown className="w-4 h-4 text-error-500" />
         )}
         <h3 className="font-medium text-neutral-900 dark:text-neutral-100">{title}</h3>
       </div>

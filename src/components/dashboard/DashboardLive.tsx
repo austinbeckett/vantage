@@ -219,8 +219,8 @@ export function DashboardLive({
         {/* GSUR Submissions */}
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-lavender-100 dark:bg-lavender-900/30 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-lavender-600 dark:text-lavender-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -236,8 +236,8 @@ export function DashboardLive({
         {/* SUR Submissions */}
         <div className="p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-azure-100 dark:bg-azure-900/30 flex items-center justify-center">
+              <Database className="w-5 h-5 text-azure-600 dark:text-azure-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -253,15 +253,15 @@ export function DashboardLive({
 
       {/* Database Activity Mini Stats */}
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-          <span className="text-xs font-medium text-purple-700 dark:text-purple-300">GSUR</span>
-          <span className="text-xs text-purple-600 dark:text-purple-400">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-lavender-50 dark:bg-lavender-900/20 rounded-lg">
+          <span className="text-xs font-medium text-lavender-700 dark:text-lavender-300">GSUR</span>
+          <span className="text-xs text-lavender-600 dark:text-lavender-400">
             {stats.recentGSUR} recent (3mo)
           </span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <span className="text-xs font-medium text-blue-700 dark:text-blue-300">SUR</span>
-          <span className="text-xs text-blue-600 dark:text-blue-400">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-azure-50 dark:bg-azure-900/20 rounded-lg">
+          <span className="text-xs font-medium text-azure-700 dark:text-azure-300">SUR</span>
+          <span className="text-xs text-azure-600 dark:text-azure-400">
             {stats.recentSUR} recent (3mo)
           </span>
         </div>
@@ -278,14 +278,14 @@ export function DashboardLive({
 
       {/* Error State */}
       {hasError && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-error-600 dark:text-error-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              <p className="text-sm font-medium text-error-800 dark:text-error-200">
                 Failed to load some data
               </p>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+              <p className="text-xs text-error-600 dark:text-error-400 mt-1">
                 {gsurError ? 'GSUR data unavailable. ' : ''}
                 {surError ? 'SUR data unavailable. ' : ''}
                 Using cached data if available.
@@ -360,9 +360,9 @@ export function DashboardLive({
                         px-2 py-1 rounded text-xs font-medium transition-colors
                         ${selectedDatabase === db
                           ? db === 'GSUR'
-                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                            ? 'bg-lavender-100 dark:bg-lavender-900/30 text-lavender-700 dark:text-lavender-300'
                             : db === 'SUR'
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                            ? 'bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-300'
                             : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                           : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400'
                         }
@@ -405,8 +405,8 @@ export function DashboardLive({
                         <div className={`
                           w-10 h-10 rounded-xl flex items-center justify-center shrink-0
                           ${item._type === 'GSUR'
-                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                            ? 'bg-lavender-100 dark:bg-lavender-900/30 text-lavender-600 dark:text-lavender-400'
+                            : 'bg-azure-100 dark:bg-azure-900/30 text-azure-600 dark:text-azure-400'
                           }
                         `}>
                           {item._type === 'GSUR' ? (
@@ -436,8 +436,8 @@ export function DashboardLive({
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                                 item._type === 'GSUR'
-                                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                  ? 'bg-lavender-100 dark:bg-lavender-900/30 text-lavender-700 dark:text-lavender-300'
+                                  : 'bg-azure-100 dark:bg-azure-900/30 text-azure-700 dark:text-azure-300'
                               }`}>
                                 {item._type}
                               </span>
@@ -478,14 +478,14 @@ export function DashboardLive({
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Info Card */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <div className="p-4 bg-azure-50 dark:bg-azure-900/20 border border-azure-200 dark:border-azure-800 rounded-xl">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-azure-600 dark:text-azure-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                <p className="text-sm font-medium text-azure-800 dark:text-azure-200">
                   Live Data Sources
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                <p className="text-xs text-azure-600 dark:text-azure-400 mt-1">
                   GSUR and SUR data is fetched directly from Health Canada.
                   DPD product searches are available in the Search page.
                 </p>
@@ -550,11 +550,11 @@ export function DashboardLive({
             </h3>
             <div className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                <div className="w-2 h-2 rounded-full bg-lavender-500" />
                 <span>GSUR: Generic Submissions Under Review</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <div className="w-2 h-2 rounded-full bg-azure-500" />
                 <span>SUR: Submissions Under Review</span>
               </div>
               <div className="flex items-center gap-2">

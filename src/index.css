@@ -43,6 +43,86 @@
   --color-neutral-900: #262624;
   --color-neutral-950: #1a1918;
 
+  /* Accent Colors from User Palette */
+
+  /* Lavender - Forms, Schedules */
+  --color-lavender-50: #f8f8fa;
+  --color-lavender-100: #f0f0f4;
+  --color-lavender-200: #e4e3eb;
+  --color-lavender-300: #d5d4e0;
+  --color-lavender-400: #cbcadb;
+  --color-lavender-500: #a8a6c0;
+  --color-lavender-600: #8583a3;
+  --color-lavender-700: #646285;
+  --color-lavender-800: #4a4963;
+  --color-lavender-900: #363548;
+  --color-lavender-950: #1f1e2a;
+
+  /* Tan - Companies, Warnings */
+  --color-tan-50: #faf9f7;
+  --color-tan-100: #f5f2ed;
+  --color-tan-200: #ebe6dc;
+  --color-tan-300: #e3dacc;
+  --color-tan-400: #d1c4af;
+  --color-tan-500: #b8a78c;
+  --color-tan-600: #9a8a6d;
+  --color-tan-700: #786b54;
+  --color-tan-800: #5a5040;
+  --color-tan-900: #403930;
+  --color-tan-950: #252119;
+
+  /* Azure - Routes, Info */
+  --color-azure-50: #f4f8fc;
+  --color-azure-100: #e6eff7;
+  --color-azure-200: #c9ddf0;
+  --color-azure-300: #a3c7e5;
+  --color-azure-400: #6a9bcc;
+  --color-azure-500: #4d82b8;
+  --color-azure-600: #3d6a9a;
+  --color-azure-700: #32557c;
+  --color-azure-800: #284460;
+  --color-azure-900: #1e3347;
+  --color-azure-950: #111d29;
+
+  /* Mint - Active Status, Success */
+  --color-mint-50: #f6faf9;
+  --color-mint-100: #ecf4f2;
+  --color-mint-200: #d8e9e4;
+  --color-mint-300: #bcd1ca;
+  --color-mint-400: #96b8ae;
+  --color-mint-500: #6f9a8e;
+  --color-mint-600: #557d72;
+  --color-mint-700: #44635b;
+  --color-mint-800: #374e48;
+  --color-mint-900: #2b3c38;
+  --color-mint-950: #172221;
+
+  /* Rose - ATC Codes */
+  --color-rose-50: #fdf8f8;
+  --color-rose-100: #faf0f0;
+  --color-rose-200: #f5e1e1;
+  --color-rose-300: #ebcece;
+  --color-rose-400: #dba9a9;
+  --color-rose-500: #c78383;
+  --color-rose-600: #a86363;
+  --color-rose-700: #874d4d;
+  --color-rose-800: #693d3d;
+  --color-rose-900: #4e2e2e;
+  --color-rose-950: #2d1a1a;
+
+  /* Error - Warm Red */
+  --color-error-50: #fef5f4;
+  --color-error-100: #fde8e6;
+  --color-error-200: #fbd4cf;
+  --color-error-300: #f5ada4;
+  --color-error-400: #eb7d70;
+  --color-error-500: #dc5445;
+  --color-error-600: #c94040;
+  --color-error-700: #a83434;
+  --color-error-800: #8a2e2e;
+  --color-error-900: #732c2c;
+  --color-error-950: #3e1313;
+
   /* Typography */
   --font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', system-ui, sans-serif;

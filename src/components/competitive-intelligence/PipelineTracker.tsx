@@ -31,10 +31,10 @@ const stageColors = {
     dot: 'bg-primary-500',
   },
   under_review: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    border: 'border-blue-300 dark:border-blue-700',
-    text: 'text-blue-700 dark:text-blue-400',
-    dot: 'bg-blue-500',
+    bg: 'bg-azure-100 dark:bg-azure-900/30',
+    border: 'border-azure-300 dark:border-azure-700',
+    text: 'text-azure-700 dark:text-azure-400',
+    dot: 'bg-azure-500',
   },
   noc_granted: {
     bg: 'bg-secondary-100 dark:bg-secondary-900/30',

@@ -44,70 +44,77 @@ export function WatchlistCardLive({
     })
   }
   if (watchlist.criteria.searchTerm) {
-    searchLabels.push({
-      type: 'search',
-      label: `"${watchlist.criteria.searchTerm}"`,
-      icon: <Search className="w-3 h-3" />,
+    // Handle multiple brand names separated by "|"
+    const brandNames = watchlist.criteria.searchTerm.split('|').map(s => s.trim())
+    brandNames.forEach(name => {
+      searchLabels.push({
+        type: 'search',
+        label: `"${name}"`,
+        icon: <Search className="w-3 h-3" />,
+      })
     })
   }
   if (watchlist.criteria.ingredientName) {
-    searchLabels.push({
-      type: 'ingredient',
-      label: watchlist.criteria.ingredientName,
-      icon: <Pill className="w-3 h-3" />,
+    // Handle multiple ingredients separated by "|"
+    const ingredients = watchlist.criteria.ingredientName.split('|').map(s => s.trim())
+    ingredients.forEach(name => {
+      searchLabels.push({
+        type: 'ingredient',
+        label: name,
+        icon: <Pill className="w-3 h-3" />,
+      })
     })
   }
-  // Primary filters
-  if (watchlist.criteria.companyNameFilter) {
+  // Filter labels (all arrays now)
+  watchlist.criteria.companyNameFilter?.forEach(company => {
     filterLabels.push({
       type: 'company',
-      label: watchlist.criteria.companyNameFilter,
+      label: company,
       icon: <Building2 className="w-3 h-3" />,
     })
-  }
-  if (watchlist.criteria.routeNameFilter) {
+  })
+  watchlist.criteria.routeNameFilter?.forEach(route => {
     filterLabels.push({
       type: 'route',
-      label: watchlist.criteria.routeNameFilter,
+      label: route,
       icon: <Route className="w-3 h-3" />,
     })
-  }
-  // Advanced filters
-  if (watchlist.criteria.statusFilter) {
+  })
+  watchlist.criteria.statusFilter?.forEach(status => {
     filterLabels.push({
       type: 'status',
-      label: getStatusName(watchlist.criteria.statusFilter),
+      label: getStatusName(status),
       icon: <Activity className="w-3 h-3" />,
     })
-  }
-  if (watchlist.criteria.formNameFilter) {
+  })
+  watchlist.criteria.formNameFilter?.forEach(form => {
     filterLabels.push({
       type: 'form',
-      label: watchlist.criteria.formNameFilter,
+      label: form,
       icon: <Pill className="w-3 h-3" />,
     })
-  }
-  if (watchlist.criteria.classFilter) {
+  })
+  watchlist.criteria.classFilter?.forEach(cls => {
     filterLabels.push({
       type: 'class',
-      label: watchlist.criteria.classFilter,
+      label: cls,
       icon: <Tag className="w-3 h-3" />,
     })
-  }
-  if (watchlist.criteria.scheduleFilter) {
+  })
+  watchlist.criteria.scheduleFilter?.forEach(schedule => {
     filterLabels.push({
       type: 'schedule',
-      label: watchlist.criteria.scheduleFilter,
+      label: schedule,
       icon: <Calendar className="w-3 h-3" />,
     })
-  }
-  if (watchlist.criteria.atcFilter) {
+  })
+  watchlist.criteria.atcFilter?.forEach(atc => {
     filterLabels.push({
       type: 'atc',
-      label: watchlist.criteria.atcFilter,
+      label: atc,
       icon: <Dna className="w-3 h-3" />,
     })
-  }
+  })
 
   const hasFilters = filterLabels.length > 0
 
@@ -151,7 +158,7 @@ export function WatchlistCardLive({
               className={`
                 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
                 ${criteria.type === 'din'
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                  ? 'bg-tan-100 dark:bg-tan-900/30 text-tan-700 dark:text-tan-300'
                   : criteria.type === 'search'
                   ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                   : 'bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300'
@@ -172,12 +179,12 @@ export function WatchlistCardLive({
             </span>
             {filterLabels.map((criteria, idx) => {
               const colorClass =
-                criteria.type === 'company' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : criteria.type === 'route' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                : criteria.type === 'status' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                : criteria.type === 'form' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                : criteria.type === 'class' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
-                : criteria.type === 'schedule' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                criteria.type === 'company' ? 'bg-tan-100 dark:bg-tan-900/30 text-tan-600 dark:text-tan-400'
+                : criteria.type === 'route' ? 'bg-azure-100 dark:bg-azure-900/30 text-azure-600 dark:text-azure-400'
+                : criteria.type === 'status' ? 'bg-mint-100 dark:bg-mint-900/30 text-mint-600 dark:text-mint-400'
+                : criteria.type === 'form' ? 'bg-lavender-100 dark:bg-lavender-900/30 text-lavender-600 dark:text-lavender-400'
+                : criteria.type === 'class' ? 'bg-mint-200 dark:bg-mint-900/30 text-mint-700 dark:text-mint-400'
+                : criteria.type === 'schedule' ? 'bg-lavender-200 dark:bg-lavender-900/30 text-lavender-700 dark:text-lavender-400'
                 : criteria.type === 'atc' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
                 : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400';
               return (
@@ -225,7 +232,7 @@ export function WatchlistCardLive({
         </button>
         <button
           onClick={onDelete}
-          className="flex items-center justify-center p-3 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="flex items-center justify-center p-3 text-neutral-400 hover:text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
         </button>

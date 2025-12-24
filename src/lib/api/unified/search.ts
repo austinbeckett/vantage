@@ -178,12 +178,34 @@ interface DPDSearchOptions {
 
 /**
  * Search DPD by brand name or ingredient based on searchType
+ * Supports pipe-delimited queries (e.g., "SPIRIVA|SPIRIVA RESPIMAT") for multi-brand search
  */
 async function searchDPD(
   query: string,
   options: DPDSearchOptions = {}
 ): Promise<UnifiedDrugProduct[]> {
   const { searchType = 'auto', limit = SEARCH_LIMITS.DEFAULT } = options
+
+  // Handle pipe-delimited queries (multiple brand names or ingredients)
+  if (query.includes('|')) {
+    const queries = query.split('|').map(q => q.trim()).filter(q => q.length > 0)
+    const allProducts: UnifiedDrugProduct[] = []
+    const seenDrugCodes = new Set<number>()
+
+    // Search for each query term
+    for (const singleQuery of queries) {
+      const results = await searchDPD(singleQuery, { ...options, limit: limit })
+      // Add unique products
+      for (const product of results) {
+        if (!seenDrugCodes.has(product.drugCode)) {
+          seenDrugCodes.add(product.drugCode)
+          allProducts.push(product)
+        }
+      }
+    }
+
+    return allProducts.slice(0, limit)
+  }
 
   let products: DPDDrugProductResponse[] = []
 
@@ -201,10 +223,24 @@ async function searchDPD(
     products = productResults.filter((p): p is DPDDrugProductResponse => p !== null)
   } else if (searchType === 'brand') {
     // Search directly by brand name
-    products = await dpdEndpoints.searchDrugProductsByBrandName(query)
+    const rawProducts = await dpdEndpoints.searchDrugProductsByBrandName(query)
+    // Deduplicate by drug_code (API returns many duplicates per product)
+    const seenCodes = new Set<number>()
+    products = rawProducts.filter(p => {
+      if (seenCodes.has(p.drug_code)) return false
+      seenCodes.add(p.drug_code)
+      return true
+    })
   } else {
     // 'auto' mode: try brand name first, fall back to ingredient
-    products = await dpdEndpoints.searchDrugProductsByBrandName(query)
+    const rawProducts = await dpdEndpoints.searchDrugProductsByBrandName(query)
+    // Deduplicate by drug_code (API returns many duplicates per product)
+    const seenCodes = new Set<number>()
+    products = rawProducts.filter(p => {
+      if (seenCodes.has(p.drug_code)) return false
+      seenCodes.add(p.drug_code)
+      return true
+    })
 
     // If no results, try searching by ingredient
     if (products.length === 0) {
