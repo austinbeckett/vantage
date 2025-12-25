@@ -18,6 +18,21 @@ import {
   Login,
   Signup,
 } from './pages'
+import { nocCacheManager } from './lib/api/noc'
+
+// -----------------------------------------------------------------------------
+// Background Cache Warming
+// -----------------------------------------------------------------------------
+// Start warming the NOC cache immediately on app load.
+// This runs in the background and doesn't block rendering.
+// The NOC database requires fetching ~355,000 records (~57MB) which takes
+// several seconds. By starting early, the cache is often ready by the time
+// the user navigates to watchlist features.
+
+// Small delay to prioritize initial render, then start warming
+setTimeout(() => {
+  nocCacheManager.startBackgroundLoad()
+}, 1000)
 
 // Configure React Query with optimal caching for Health Canada API
 const queryClient = new QueryClient({

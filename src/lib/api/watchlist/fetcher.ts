@@ -15,7 +15,7 @@ import type {
 import type { UnifiedDrugProduct } from '../dpd/transformers'
 import type { GSUREntry } from '../../../types/health-canada-api'
 import { unifiedSearch, SEARCH_LIMITS } from '../unified/search'
-import { searchNOCByIngredientWithFilters, type NOCSearchResult } from '../noc'
+import { searchNOCByIngredientWithFilters, nocCacheManager, type NOCSearchResult } from '../noc'
 import { searchGSUR } from '../scraper'
 import { getSearchType, getPrimarySearchQuery } from '../../hooks/useWatchlistStorage'
 
@@ -45,6 +45,8 @@ export interface NOCTabData {
   entries: (NOCSearchResult & { isNew: boolean })[]
   count: number
   newCount: number
+  /** Whether NOC data is still loading (cache not ready) */
+  isLoading?: boolean
 }
 
 export interface GSURTabData {
@@ -453,6 +455,11 @@ export async function fetchTabbedWatchlistData(
     }
   }
 
+  // Check if NOC cache is ready (for progressive loading)
+  // If not ready, we'll return empty NOC results with isLoading: true
+  // This allows DPD and GSUR to display immediately while NOC loads
+  const nocCacheReady = nocCacheManager.isReady()
+
   // Fetch from all sources in parallel
   // Route/Form filters are notification-scope and applied server-side to DPD/NOC
   // Status filter is view-only and applied client-side in DPD tab
@@ -469,7 +476,8 @@ export async function fetchTabbedWatchlistData(
     }),
 
     // NOC search with route/form filters - only search if we have an ingredient name
-    criteria.ingredientName
+    // AND the NOC cache is ready (to avoid blocking on cache load)
+    criteria.ingredientName && nocCacheReady
       ? searchNOCByIngredientWithFilters(
           criteria.ingredientName,
           criteria.routeFilter,
@@ -517,6 +525,9 @@ export async function fetchTabbedWatchlistData(
     console.error('GSUR fetch failed:', gsurResult.reason)
   }
 
+  // Determine if NOC is still loading (cache wasn't ready AND we have ingredient criteria)
+  const nocIsLoading = !nocCacheReady && !!criteria.ingredientName
+
   return {
     dpd: {
       products: dpdProducts,
@@ -527,6 +538,7 @@ export async function fetchTabbedWatchlistData(
       entries: nocEntries,
       count: nocEntries.length,
       newCount: nocNewCount,
+      isLoading: nocIsLoading,
     },
     gsur: {
       entries: gsurEntries,

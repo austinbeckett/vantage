@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Search, Eye, Bell, X, Loader2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useWatchlistStorage,
   hasValidPrimarySearch,
@@ -20,6 +21,7 @@ import { FormAutocomplete } from './FormAutocomplete'
 import { SearchConfirmationModal } from './SearchConfirmationModal'
 import { searchDrugProductsByBrandName, searchActiveIngredientsByName } from '../../lib/api/dpd/endpoints'
 import { generateWatchlistMetadata } from '../../lib/api/ai'
+import { prefetchWatchlistData } from '../../lib/api/watchlist'
 import type { ApiError } from '../../lib/api/client'
 
 // -----------------------------------------------------------------------------
@@ -35,6 +37,7 @@ interface WatchlistsLiveProps {
 // -----------------------------------------------------------------------------
 
 export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
+  const queryClient = useQueryClient()
   const {
     watchlists,
     isLoaded,
@@ -264,6 +267,9 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
         criteria,
       })
       closeModal()
+
+      // Prefetch data for the edited watchlist
+      prefetchWatchlistData(queryClient, editingWatchlist.id, criteria)
     } else {
       // CREATE mode: generate AI name/description
       const placeholderName = 'Generating...'
@@ -278,6 +284,9 @@ export function WatchlistsLive({ onView }: WatchlistsLiveProps) {
       )
 
       closeModal()
+
+      // Prefetch watchlist data immediately so it's ready when user views the watchlist
+      prefetchWatchlistData(queryClient, newWatchlist.id, criteria)
 
       // Generate AI metadata in background
       try {

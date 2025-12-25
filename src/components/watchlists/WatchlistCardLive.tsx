@@ -3,8 +3,11 @@
 // =============================================================================
 // Displays a single watchlist with its criteria
 
+import { useRef } from 'react'
 import { Eye, Bell, BellOff, Pencil, Trash2, Search, Route, Pill, Loader2, Database, FileCheck, FileSearch, Sparkles } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { WatchlistLive } from '../../lib/hooks'
+import { prefetchWatchlistData, isWatchlistDataCached } from '../../lib/api/watchlist'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -29,6 +32,36 @@ export function WatchlistCardLive({
   onDelete,
   onToggleNotifications,
 }: WatchlistCardLiveProps) {
+  const queryClient = useQueryClient()
+  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Prefetch watchlist data on hover (with 200ms delay to avoid accidental hovers)
+  const handleMouseEnter = () => {
+    // Don't prefetch if already cached
+    if (isWatchlistDataCached(queryClient, watchlist.id)) {
+      return
+    }
+
+    // Delay prefetch to avoid triggering on accidental hovers
+    prefetchTimeoutRef.current = setTimeout(() => {
+      prefetchWatchlistData(
+        queryClient,
+        watchlist.id,
+        watchlist.criteria,
+        watchlist.lastViewedAt,
+        watchlist.seenEntries
+      )
+    }, 200)
+  }
+
+  const handleMouseLeave = () => {
+    // Cancel prefetch if user leaves before delay
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current)
+      prefetchTimeoutRef.current = null
+    }
+  }
+
   // Search criteria labels (notification-scope)
   const criteriaLabels: { type: string; label: string; icon: React.ReactNode }[] = []
 
@@ -75,7 +108,11 @@ export function WatchlistCardLive({
   })
 
   return (
-    <div className="group bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl overflow-hidden hover:border-primary-500/30 dark:hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300">
+    <div
+      className="group bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl overflow-hidden hover:border-primary-500/30 dark:hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">

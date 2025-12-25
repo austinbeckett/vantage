@@ -2,126 +2,51 @@
 // NOC (Notice of Compliance) Search
 // =============================================================================
 // Searches NOC database by medicinal ingredient name
-// Fetches all data once, caches it, and filters client-side
+// Uses the NOC cache manager for background loading and progress tracking
 
-import {
-  fetchAllNOCMain,
-  fetchAllMedicinalIngredients,
-  fetchAllNOCDrugProducts,
-  fetchAllNOCRoutes,
-  fetchAllNOCDosageForms,
-} from './endpoints'
 import type {
-  NOCMainResponse,
   NOCIngredientResponse,
-  NOCDrugProductResponse,
-  NOCRouteResponse,
-  NOCDosageFormResponse,
   NOCSearchResult,
   NOCCache,
 } from './types'
-import { API_CONFIG } from '../constants'
+import { nocCacheManager } from './cache-manager'
 
 // -----------------------------------------------------------------------------
-// Cache
+// Cache (delegated to cache manager)
 // -----------------------------------------------------------------------------
-
-let cache: NOCCache | null = null
-const CACHE_TTL = API_CONFIG.CACHE.SCRAPER_STALE_TIME // 1 hour
-
-function isCacheValid(): boolean {
-  return cache !== null && Date.now() - cache.timestamp < CACHE_TTL
-}
 
 /**
  * Clear the NOC cache
  */
 export function clearNOCCache(): void {
-  cache = null
+  nocCacheManager.clearCache()
 }
 
 /**
  * Get cache status for debugging
  */
 export function getNOCCacheStatus(): { cached: boolean; age: number | null; ingredientCount: number } {
+  const cache = nocCacheManager.getCache()
   return {
-    cached: cache !== null,
+    cached: nocCacheManager.isReady(),
     age: cache ? Date.now() - cache.timestamp : null,
     ingredientCount: cache?.ingredients.length ?? 0,
   }
 }
 
-// -----------------------------------------------------------------------------
-// Data Fetching
-// -----------------------------------------------------------------------------
+/**
+ * Check if NOC cache is ready without blocking
+ */
+export function isNOCCacheReady(): boolean {
+  return nocCacheManager.isReady()
+}
 
 /**
- * Fetch all NOC data and cache it
- * This is a heavy operation (~15-30 seconds) but only runs once per session
+ * Ensure cache is loaded (waits if necessary)
+ * Delegates to the cache manager
  */
 async function ensureCache(): Promise<NOCCache> {
-  if (isCacheValid()) {
-    return cache!
-  }
-
-  console.log('Fetching NOC data from Health Canada API...')
-  const startTime = Date.now()
-
-  // Fetch all five datasets in parallel
-  const [mainData, ingredientsData, drugProductsData, routesData, dosageFormsData] = await Promise.all([
-    fetchAllNOCMain(),
-    fetchAllMedicinalIngredients(),
-    fetchAllNOCDrugProducts(),
-    fetchAllNOCRoutes(),
-    fetchAllNOCDosageForms(),
-  ])
-
-  // Index main data by NOC number
-  const mainMap = new Map<number, NOCMainResponse>()
-  for (const item of mainData) {
-    mainMap.set(item.noc_number, item)
-  }
-
-  // Index drug products by NOC number
-  const drugProductsMap = new Map<number, NOCDrugProductResponse[]>()
-  for (const item of drugProductsData) {
-    if (!drugProductsMap.has(item.noc_number)) {
-      drugProductsMap.set(item.noc_number, [])
-    }
-    drugProductsMap.get(item.noc_number)!.push(item)
-  }
-
-  // Index routes by NOC number
-  const routesMap = new Map<number, NOCRouteResponse[]>()
-  for (const item of routesData) {
-    if (!routesMap.has(item.noc_number)) {
-      routesMap.set(item.noc_number, [])
-    }
-    routesMap.get(item.noc_number)!.push(item)
-  }
-
-  // Index dosage forms by NOC number
-  const dosageFormsMap = new Map<number, NOCDosageFormResponse[]>()
-  for (const item of dosageFormsData) {
-    if (!dosageFormsMap.has(item.noc_number)) {
-      dosageFormsMap.set(item.noc_number, [])
-    }
-    dosageFormsMap.get(item.noc_number)!.push(item)
-  }
-
-  const elapsed = Date.now() - startTime
-  console.log(`Fetched ${mainData.length} NOC entries, ${ingredientsData.length} ingredients, ${drugProductsData.length} drug products, ${routesData.length} routes, ${dosageFormsData.length} dosage forms in ${elapsed}ms`)
-
-  cache = {
-    main: mainMap,
-    ingredients: ingredientsData,
-    drugProducts: drugProductsMap,
-    routes: routesMap,
-    dosageForms: dosageFormsMap,
-    timestamp: Date.now(),
-  }
-
-  return cache
+  return nocCacheManager.ensureCache()
 }
 
 // -----------------------------------------------------------------------------

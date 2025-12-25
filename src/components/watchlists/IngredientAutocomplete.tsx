@@ -9,7 +9,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Search, X, Loader2, Pill } from 'lucide-react'
 import { useIngredientSearch } from '../../lib/api/dpd/queries'
 import { Portal } from '../ui/Portal'
-import { MIN_SEARCH_LENGTH } from '../../lib/hooks'
+import { MIN_SEARCH_LENGTH, useDebouncedValue } from '../../lib/hooks'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -45,8 +45,18 @@ export function IngredientAutocomplete({
     return value.split('|').map(s => s.trim()).filter(Boolean)
   }, [value])
 
-  // Search for ingredients when input is >= 3 characters
-  const { data, isLoading, isFetching } = useIngredientSearch(inputValue.trim())
+  // Debounce the input to avoid firing API calls on every keystroke
+  // Wait 300ms after the user stops typing before searching
+  const debouncedInput = useDebouncedValue(inputValue.trim(), 300)
+
+  // Search for ingredients when debounced input is >= 3 characters
+  const { data, isLoading, isFetching } = useIngredientSearch(
+    debouncedInput.length >= MIN_SEARCH_LENGTH ? debouncedInput : ''
+  )
+
+  // Track if user is still typing (input hasn't settled yet)
+  const isTyping = inputValue.trim() !== debouncedInput &&
+                   inputValue.trim().length >= MIN_SEARCH_LENGTH
 
   // Extract unique ingredient names from search results, excluding already selected
   const suggestions = useMemo(() => {
@@ -156,9 +166,9 @@ export function IngredientAutocomplete({
     }
   }
 
-  const showLoading = isLoading || isFetching
-  const showSuggestions = isOpen && suggestions.length > 0 && inputValue.trim().length >= MIN_SEARCH_LENGTH
-  const showNoResults = isOpen && !showLoading && inputValue.trim().length >= MIN_SEARCH_LENGTH && suggestions.length === 0 && data
+  const showLoading = isLoading || isFetching || isTyping
+  const showSuggestions = isOpen && suggestions.length > 0 && inputValue.trim().length >= MIN_SEARCH_LENGTH && !isTyping
+  const showNoResults = isOpen && !showLoading && inputValue.trim().length >= MIN_SEARCH_LENGTH && suggestions.length === 0 && data && !isTyping
   const isPartialInput = inputValue.trim().length > 0 && inputValue.trim().length < MIN_SEARCH_LENGTH
 
   return (

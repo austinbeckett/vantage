@@ -9,6 +9,7 @@ import { ArrowLeft, Bell, BellOff, Pencil, Trash2, Loader2, AlertCircle, Refresh
 import {
   useWatchlistStorage,
   hasValidPrimarySearch,
+  useNOCCacheStatus,
   MIN_SEARCH_LENGTH,
   type WatchlistCriteriaLive,
   type CachedCounts,
@@ -78,6 +79,9 @@ export default function WatchlistDetailLive() {
     watchlist?.seenEntries || { dpd: [], noc: [], gsur: [] },
     hasValidSearch && !!watchlist
   )
+
+  // Track NOC cache status for progressive loading indicator
+  const nocCacheStatus = useNOCCacheStatus()
 
   // Track the last processed data to avoid infinite loops
   const lastProcessedRef = useRef<string | null>(null)
@@ -489,10 +493,18 @@ export default function WatchlistDetailLive() {
                   <Database className="w-3 h-3" />
                   {tabbedData.dpd.count} products
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300">
-                  <FileCheck className="w-3 h-3" />
-                  {tabbedData.noc.count} approvals
-                </span>
+                {/* NOC count with loading indicator if cache is still loading */}
+                {tabbedData.noc.isLoading || nocCacheStatus.isLoading ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading NOC...
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300">
+                    <FileCheck className="w-3 h-3" />
+                    {tabbedData.noc.count} approvals
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-tan-100 dark:bg-tan-900/30 text-tan-700 dark:text-tan-300">
                   <FileSearch className="w-3 h-3" />
                   {tabbedData.gsur.count} filings
@@ -515,6 +527,29 @@ export default function WatchlistDetailLive() {
 
       {/* Results - Tabbed View */}
       <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-6">
+        {/* NOC Cache Loading Progress */}
+        {nocCacheStatus.isLoading && watchlist.criteria.ingredientName && (
+          <div className="p-4 bg-azure-50 dark:bg-azure-900/20 border border-azure-200 dark:border-azure-800 rounded-xl mb-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-azure-500 animate-spin shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-azure-700 dark:text-azure-300">
+                  Preparing NOC database ({nocCacheStatus.progress}%)
+                </p>
+                <p className="text-xs text-azure-600 dark:text-azure-400 mt-0.5">
+                  {nocCacheStatus.message}
+                </p>
+                <div className="mt-2 h-1.5 bg-azure-200 dark:bg-azure-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-azure-500 transition-all duration-300 ease-out"
+                    style={{ width: `${nocCacheStatus.progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error State */}
         {error && (
           <div className="p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-xl mb-4">
